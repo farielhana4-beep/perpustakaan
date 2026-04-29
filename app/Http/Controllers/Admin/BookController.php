@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\BookRequest;
 use App\Models\Category;
 use App\Models\Book;
-use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class BookController extends Controller
@@ -24,9 +26,12 @@ class BookController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(BookRequest $request)
     {
-        Book::create($this->validatedData($request));
+        $data = $request->validated();
+        $data['image'] = $this->storeImage($request->file('image'));
+
+        Book::create($data);
 
         return redirect()->route('admin.books.index')->with('success', 'Book saved');
     }
@@ -39,15 +44,29 @@ class BookController extends Controller
         ]);
     }
 
-    public function update(Request $request, Book $book)
+    public function update(BookRequest $request, Book $book)
     {
-        $book->update($this->validatedData($request));
+        $data = $request->validated();
+
+        if ($request->hasFile('image')) {
+            $newImage = $this->storeImage($request->file('image'));
+
+            if ($newImage) {
+                $this->deleteImage($book->image);
+                $data['image'] = $newImage;
+            }
+        } else {
+            unset($data['image']);
+        }
+
+        $book->update($data);
 
         return redirect()->route('admin.books.index')->with('success', 'Book saved');
     }
 
     public function destroy(Book $book)
     {
+        $this->deleteImage($book->image);
         $book->delete();
 
         return redirect()
@@ -55,14 +74,19 @@ class BookController extends Controller
             ->with('success', 'Book deleted successfully.');
     }
 
-    private function validatedData(Request $request): array
+    private function storeImage(?UploadedFile $image): ?string
     {
-        return $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'author' => ['required', 'string', 'max:255'],
-            'isbn' => ['nullable', 'string', 'max:50'],
-            'stock' => ['required', 'integer', 'min:0'],
-            'category_id' => ['nullable', 'exists:categories,id'],
-        ]);
+        if (! $image) {
+            return null;
+        }
+
+        return Storage::disk('public')->putFile('books', $image);
+    }
+
+    private function deleteImage(?string $path): void
+    {
+        if ($path) {
+            Storage::disk('public')->delete($path);
+        }
     }
 }

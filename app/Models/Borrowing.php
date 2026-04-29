@@ -18,6 +18,7 @@ class Borrowing extends Model
     protected $fillable = [
         'user_id',
         'book_id',
+        'quantity',
         'borrowed_at',
         'due_date',
         'returned_at',
@@ -31,6 +32,7 @@ class Borrowing extends Model
             'borrowed_at' => 'datetime',
             'due_date' => 'datetime',
             'returned_at' => 'datetime',
+            'quantity' => 'integer',
             'fine' => 'integer',
         ];
     }

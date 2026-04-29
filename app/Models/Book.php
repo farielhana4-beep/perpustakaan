@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Book extends Model
 {
@@ -14,7 +16,12 @@ class Book extends Model
         'isbn',
         'stock',
         'cover',
+        'image',
         'category_id',
+    ];
+
+    protected $appends = [
+        'image_url',
     ];
 
     public function category(): BelongsTo
@@ -25,5 +32,14 @@ class Book extends Model
     public function borrowings(): HasMany
     {
         return $this->hasMany(Borrowing::class);
+    }
+
+    protected function imageUrl(): Attribute
+    {
+        return Attribute::get(function (): ?string {
+            $path = $this->image ?: $this->cover;
+
+            return $path ? Storage::disk('public')->url($path) : null;
+        });
     }
 }

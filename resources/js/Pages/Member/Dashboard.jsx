@@ -26,15 +26,16 @@ export default function Dashboard({ borrowings, alerts, settings }) {
           {alerts.length === 0 ? (
             <EmptyCard title="No active borrowings" description="Borrow a book from the catalog to get started." />
           ) : (
-            alerts.map((item) => (
-              <div key={item.id} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="font-semibold text-slate-900">{item.title}</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <StatusBadge status={item.status} />
-                    </div>
-                  </div>
+                alerts.map((item) => (
+                  <div key={item.id} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="font-semibold text-slate-900">{item.title}</p>
+                        <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Qty {item.quantity}</p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <StatusBadge status={item.status} />
+                        </div>
+                      </div>
                   <div className="text-right text-sm text-slate-600">
                     <p>Due date</p>
                     <p className="font-semibold text-slate-900">{item.due_date}</p>
@@ -81,11 +82,12 @@ export default function Dashboard({ borrowings, alerts, settings }) {
             {borrowings.length === 0 ? (
               <EmptyCard title="Nothing borrowed yet" description="Visit the catalog to borrow books." />
             ) : (
-              borrowings.map((item) => (
+                borrowings.map((item) => (
                   <div key={item.id} className="rounded-2xl border border-slate-200 p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <p className="font-medium text-slate-900">{item.book.title}</p>
+                        <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Qty {item.quantity}</p>
                         <div className="mt-2 flex flex-wrap gap-2">
                           <StatusBadge status={item.status} />
                         </div>

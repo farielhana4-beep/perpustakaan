@@ -9,11 +9,12 @@ export default function Create({ categories }) {
     isbn: '',
     stock: '',
     category_id: '',
+    image: null,
   })
 
   const submit = (e) => {
     e.preventDefault()
-    post('/admin/books')
+    post('/admin/books', { forceFormData: true })
   }
 
   return (
@@ -41,7 +42,7 @@ export default function Create({ categories }) {
           </Link>
         </div>
 
-        <form onSubmit={submit} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <form onSubmit={submit} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="grid gap-5">
             <Field label="Title" error={errors.title}>
               <input value={data.title} onChange={(e) => setData('title', e.target.value)} className="input" />
@@ -75,13 +76,23 @@ export default function Create({ categories }) {
                 className="input"
               />
             </Field>
+
+            <Field label="Cover Image" error={errors.image}>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setData('image', e.target.files?.[0] ?? null)}
+                className="input"
+              />
+              <p className="mt-2 text-xs text-slate-500">Optional. Stored in `storage/app/public/books`.</p>
+            </Field>
           </div>
 
           <div className="mt-8">
             <button
               type="submit"
               disabled={processing}
-              className="rounded-xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-xl bg-sky-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {processing ? 'Saving...' : 'Save Book'}
             </button>

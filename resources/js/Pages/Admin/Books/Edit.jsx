@@ -9,11 +9,12 @@ export default function Edit({ book, categories }) {
     isbn: book.isbn ?? '',
     stock: book.stock ?? '',
     category_id: book.category_id ?? '',
+    image: null,
   })
 
   const submit = (e) => {
     e.preventDefault()
-    put(`/admin/books/${book.id}`)
+    put(`/admin/books/${book.id}`, { forceFormData: true })
   }
 
   return (
@@ -41,8 +42,30 @@ export default function Edit({ book, categories }) {
           </Link>
         </div>
 
-        <form onSubmit={submit} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <form onSubmit={submit} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="grid gap-5">
+            <div className="grid gap-4 md:grid-cols-[140px_1fr] md:items-start">
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+                {book.image_url ? (
+                  <img src={book.image_url} alt={book.title} className="h-48 w-full object-cover" />
+                ) : (
+                  <div className="flex h-48 items-center justify-center text-sm font-semibold text-slate-400">
+                    No cover image
+                  </div>
+                )}
+              </div>
+
+              <Field label="New Cover Image" error={errors.image}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setData('image', e.target.files?.[0] ?? null)}
+                  className="input"
+                />
+                <p className="mt-2 text-xs text-slate-500">Leave empty to keep the current cover.</p>
+              </Field>
+            </div>
+
             <Field label="Title" error={errors.title}>
               <input value={data.title} onChange={(e) => setData('title', e.target.value)} className="input" />
             </Field>
@@ -81,7 +104,7 @@ export default function Edit({ book, categories }) {
             <button
               type="submit"
               disabled={processing}
-              className="rounded-xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-xl bg-sky-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {processing ? 'Updating...' : 'Update Book'}
             </button>

@@ -27,6 +27,7 @@ class DashboardController extends Controller
             return [
                 'id' => $borrowing->id,
                 'title' => $borrowing->book->title,
+                'quantity' => $borrowing->quantity,
                 'status' => $borrowing->status,
                 'due_date' => $dueDate->toDateString(),
                 'days_left' => now()->diffInDays($dueDate, false),

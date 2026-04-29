@@ -25,6 +25,7 @@ export default function Index({ borrowings, settings }) {
             <thead className="bg-slate-50">
               <tr>
                 <Th>Book</Th>
+                <Th>Qty</Th>
                 <Th>Status</Th>
                 <Th>Borrowed</Th>
                 <Th>Due</Th>
@@ -36,7 +37,7 @@ export default function Index({ borrowings, settings }) {
             <tbody className="divide-y divide-slate-200">
               {borrowings.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="px-6 py-14 text-center text-sm text-slate-500">
+                  <td colSpan="8" className="px-6 py-14 text-center text-sm text-slate-500">
                     No borrowing history yet.
                   </td>
                 </tr>
@@ -44,6 +45,7 @@ export default function Index({ borrowings, settings }) {
                 borrowings.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-50">
                     <Td>{item.book?.title}</Td>
+                    <Td>{item.quantity}</Td>
                     <Td>
                       <StatusBadge status={item.status} />
                     </Td>

@@ -41,7 +41,7 @@ export default function AdminLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 md:flex">
-      <aside className="border-r border-white/10 bg-slate-900/95 text-white backdrop-blur md:w-80">
+      <aside className="border-r border-white/10 bg-slate-950 text-white backdrop-blur md:w-80">
         <div className="flex min-h-screen flex-col p-5">
           <div className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[0_12px_30px_rgba(15,23,42,0.25)]">
             <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-slate-400">Library</p>

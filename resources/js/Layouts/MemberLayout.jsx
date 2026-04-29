@@ -6,7 +6,7 @@ function NavItem({ href, active, children }) {
       href={href}
       className={[
         'block rounded-xl px-4 py-3 text-sm font-medium transition',
-        active ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white',
+        active ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/10 hover:text-white',
       ].join(' ')}
     >
       {children}
@@ -47,7 +47,7 @@ export default function MemberLayout({ children }) {
         <button
           type="button"
           onClick={logout}
-          className="mt-8 rounded-xl border border-white/10 px-4 py-3 text-sm font-medium text-slate-200 transition hover:bg-white/5"
+          className="mt-8 rounded-xl border border-white/10 px-4 py-3 text-sm font-medium text-slate-200 transition hover:bg-white/10"
         >
           Logout
         </button>

@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreBorrowingRequest;
 use App\Models\Book;
 use App\Models\Borrowing;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class BorrowingController extends Controller
@@ -28,7 +28,7 @@ class BorrowingController extends Controller
 
         return Inertia::render('Admin/Circulation/Index', [
             'borrowings' => $borrowings,
-            'books' => Book::orderBy('title')->get(['id', 'title', 'stock']),
+            'books' => Book::orderBy('title')->get(['id', 'title', 'stock', 'image']),
             'members' => User::where('role', 'member')->orderBy('name')->get(['id', 'name', 'email']),
             'filters' => [
                 'status' => $status,
@@ -50,42 +50,33 @@ class BorrowingController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreBorrowingRequest $request)
     {
         $settings = Setting::current();
         $isMemberRequest = $request->routeIs('member.*');
 
-        $rules = [
-            'book_id' => ['required', Rule::exists('books', 'id')],
-        ];
-
-        if ($isMemberRequest) {
-            $rules['user_id'] = ['prohibited'];
-        } else {
-            $rules['user_id'] = ['required', Rule::exists('users', 'id')->where('role', 'member')];
-        }
-
-        $data = $request->validate($rules);
+        $data = $request->validated();
+        $quantity = (int) $data['quantity'];
         $targetUserId = $isMemberRequest ? $request->user()->id : (int) $data['user_id'];
 
-        $activeCount = Borrowing::query()
+        $activeQuantity = Borrowing::query()
             ->where('user_id', $targetUserId)
             ->active()
-            ->count();
+            ->sum('quantity');
 
-        if ($activeCount >= $settings->max_books_per_user) {
+        if (($activeQuantity + $quantity) > $settings->max_books_per_user) {
             return back()->with('error', 'User has reached the borrowing limit.');
         }
 
         $failed = false;
         $message = null;
 
-        DB::transaction(function () use ($data, $targetUserId, $settings, &$failed, &$message): void {
+        DB::transaction(function () use ($data, $targetUserId, $settings, $quantity, &$failed, &$message): void {
             $book = Book::lockForUpdate()->findOrFail($data['book_id']);
 
-            if ($book->stock <= 0) {
+            if ($book->stock < $quantity) {
                 $failed = true;
-                $message = 'Stock habis';
+                $message = 'Stock tidak mencukupi';
 
                 return;
             }
@@ -93,6 +84,7 @@ class BorrowingController extends Controller
             Borrowing::create([
                 'user_id' => $targetUserId,
                 'book_id' => $book->id,
+                'quantity' => $quantity,
                 'borrowed_at' => now(),
                 'due_date' => now()->addDays($settings->max_borrow_days),
                 'returned_at' => null,
@@ -100,7 +92,7 @@ class BorrowingController extends Controller
                 'fine' => 0,
             ]);
 
-            $book->decrement('stock');
+            $book->decrement('stock', $quantity);
         });
 
         if ($failed) {
@@ -127,7 +119,7 @@ class BorrowingController extends Controller
                 'fine' => $borrowing->calculateFine(now()),
             ]);
 
-            $book->increment('stock');
+            $book->increment('stock', $borrowing->quantity);
         });
 
         return back()->with('success', 'Book returned');

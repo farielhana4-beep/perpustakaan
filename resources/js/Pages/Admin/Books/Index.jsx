@@ -35,11 +35,12 @@ export default function Index({ books }) {
           </Link>
         </div>
 
-        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200">
               <thead className="bg-slate-50">
                 <tr>
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Cover</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Title</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Author</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Category</th>
@@ -50,13 +51,24 @@ export default function Index({ books }) {
               <tbody className="divide-y divide-slate-200 bg-white">
                 {books.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-14 text-center text-sm text-slate-500">
+                    <td colSpan="6" className="px-6 py-14 text-center text-sm text-slate-500">
                       No books yet.
                     </td>
                   </tr>
                 ) : (
                   books.map((book) => (
                     <tr key={book.id} className="hover:bg-slate-50">
+                      <td className="px-6 py-4">
+                        <div className="h-16 w-12 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                          {book.image_url ? (
+                            <img src={book.image_url} alt={book.title} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                              No cover
+                            </div>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-6 py-4 text-sm font-medium text-slate-900">{book.title}</td>
                       <td className="px-6 py-4 text-sm text-slate-600">{book.author}</td>
                       <td className="px-6 py-4 text-sm text-slate-600">{book.category?.name ?? '-'}</td>

@@ -8,9 +8,12 @@ export default function Index({ books, members, borrowings, filters, statusOptio
   const form = useForm({
     user_id: '',
     book_id: '',
+    quantity: 1,
   })
   const currentStatus = filters?.status ?? ''
   const currency = settings?.currency ?? 'IDR'
+  const selectedBook = books.find((book) => String(book.id) === String(form.data.book_id))
+  const maxQuantity = selectedBook?.stock ?? 1
 
   const submit = (e) => {
     e.preventDefault()
@@ -67,7 +70,10 @@ export default function Index({ books, members, borrowings, filters, statusOptio
                 <select
                   className="input"
                   value={form.data.book_id}
-                  onChange={(e) => form.setData('book_id', e.target.value)}
+                  onChange={(e) => {
+                    form.setData('book_id', e.target.value)
+                    form.setData('quantity', 1)
+                  }}
                 >
                   <option value="">Select book</option>
                   {books.map((book) => (
@@ -78,9 +84,21 @@ export default function Index({ books, members, borrowings, filters, statusOptio
                 </select>
                 {form.errors.book_id && <p className="mt-2 text-sm text-red-600">{form.errors.book_id}</p>}
               </Field>
+              <Field label="Quantity">
+                <input
+                  type="number"
+                  min="1"
+                  max={maxQuantity}
+                  value={form.data.quantity}
+                  onChange={(e) => form.setData('quantity', e.target.value)}
+                  className="input"
+                />
+                <p className="mt-2 text-xs text-slate-500">Max available stock: {selectedBook?.stock ?? '-'}</p>
+                {form.errors.quantity && <p className="mt-2 text-sm text-red-600">{form.errors.quantity}</p>}
+              </Field>
               <button
                 disabled={form.processing}
-                className="inline-flex w-fit items-center rounded-xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex w-fit items-center rounded-xl bg-sky-500 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {form.processing ? 'Saving...' : 'Borrow Book'}
               </button>
@@ -131,6 +149,7 @@ function BorrowingCard({ item, currency }) {
         <div>
           <p className="font-semibold text-slate-900">{item.book?.title}</p>
           <p className="mt-1 text-sm text-slate-600">{item.user?.name}</p>
+          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Qty {item.quantity}</p>
           <div className="mt-3 flex flex-wrap gap-2">
             <StatusBadge status={item.status} />
           </div>
@@ -149,7 +168,7 @@ function BorrowingCard({ item, currency }) {
             <button
               type="button"
               onClick={() => router.post(`/admin/borrowings/${item.id}/return`)}
-              className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+              className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600"
             >
               Return
             </button>
