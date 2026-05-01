@@ -1,11 +1,24 @@
 import { Head, router, usePage } from '@inertiajs/react'
+import { EmptyState, TableSkeleton } from '../../../Components/DataStates'
+import Pagination from '../../../Components/Pagination'
+import useIndexFilters from '../../../Hooks/useIndexFilters'
 import MemberLayout from '../../../Layouts/MemberLayout'
 import StatusBadge from '../../../Components/StatusBadge'
 import { formatCurrency } from '../../../Support/currency'
 
-export default function Index({ borrowings, settings }) {
+const defaultFilters = {
+  status: '',
+}
+
+export default function Index({ borrowings, settings, filters, statusOptions }) {
   const { flash = {} } = usePage().props
   const currency = settings?.currency ?? 'IDR'
+  const { data, setData, applyFilters, resetFilters, isLoading } = useIndexFilters({
+    url: '/member/history',
+    defaults: defaultFilters,
+    filters,
+    debounceKeys: [],
+  })
 
   return (
     <MemberLayout>
@@ -15,61 +28,104 @@ export default function Index({ borrowings, settings }) {
         <FlashBanner tone="error" message={flash.error} />
 
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-600">History</p>
-          <h1 className="mt-2 text-3xl font-bold text-slate-900">Borrowing History</h1>
-          <p className="mt-2 text-sm text-slate-600">Review all returned, overdue, and lost borrowings.</p>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-600">History</p>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <h1 className="text-3xl font-bold text-slate-900">Borrowing History</h1>
+                {isLoading && <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Updating...</span>}
+              </div>
+              <p className="mt-2 text-sm text-slate-600">Review borrowed books, returned dates, overdue status, and fine totals.</p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <select className="rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none" value={data.status} onChange={(e) => setData('status', e.target.value)}>
+                {statusOptions.map((option) => (
+                  <option key={option.value || 'all'} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => applyFilters()}
+                className="rounded-xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600"
+              >
+                Apply
+              </button>
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
         </section>
 
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-slate-50">
-              <tr>
-                <Th>Book</Th>
-                <Th>Qty</Th>
-                <Th>Status</Th>
-                <Th>Borrowed</Th>
-                <Th>Due</Th>
-                <Th>Returned</Th>
-                <Th>Fine</Th>
-                <Th align="right">Action</Th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {borrowings.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="px-6 py-14 text-center text-sm text-slate-500">
-                    No borrowing history yet.
-                  </td>
-                </tr>
-              ) : (
-                borrowings.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50">
-                    <Td>{item.book?.title}</Td>
-                    <Td>{item.quantity}</Td>
-                    <Td>
-                      <StatusBadge status={item.status} />
-                    </Td>
-                    <Td>{formatDate(item.borrowed_at)}</Td>
-                    <Td>{formatDate(item.due_date)}</Td>
-                    <Td>{item.returned_at ? formatDate(item.returned_at) : '-'}</Td>
-                    <Td>{formatCurrency(item.fine_amount, currency)}</Td>
-                    <Td align="right">
-                      {(item.status === 'borrowed' || item.status === 'overdue') && (
-                        <button
-                          type="button"
-                          onClick={() => router.post(`/member/borrowings/${item.id}/return`)}
-                          className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
-                        >
-                          Return
-                        </button>
-                      )}
-                    </Td>
+        {isLoading && borrowings.data.length === 0 ? (
+          <TableSkeleton rows={6} columns={8} />
+        ) : borrowings.data.length === 0 ? (
+          <EmptyState title="No borrowing history yet" description="Borrowings will appear here once you start using the catalog." />
+        ) : (
+          <>
+            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-6 py-4 text-sm text-slate-500">
+                <p>
+                  Showing <span className="font-semibold text-slate-700">{borrowings.from}</span> to{' '}
+                  <span className="font-semibold text-slate-700">{borrowings.to}</span> of{' '}
+                  <span className="font-semibold text-slate-700">{borrowings.total}</span> history items
+                </p>
+              </div>
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <Th>Book</Th>
+                    <Th>Qty</Th>
+                    <Th>Status</Th>
+                    <Th>Borrowed</Th>
+                    <Th>Due</Th>
+                    <Th>Returned</Th>
+                    <Th>Fine</Th>
+                    <Th align="right">Action</Th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </section>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {borrowings.data.map((item) => (
+                    <tr key={item.id} className="hover:bg-slate-50">
+                      <Td>{item.book?.title}</Td>
+                      <Td>{item.quantity}</Td>
+                      <Td>
+                        <div className="flex items-center gap-2">
+                          <StatusBadge status={item.status} />
+                          {item.status === 'overdue' && <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-600">Warning</span>}
+                        </div>
+                      </Td>
+                      <Td>{formatDate(item.borrowed_at)}</Td>
+                      <Td>{formatDate(item.due_date)}</Td>
+                      <Td>{item.returned_at ? formatDate(item.returned_at) : '-'}</Td>
+                      <Td>{formatCurrency(item.fine_amount, currency)}</Td>
+                      <Td align="right">
+                        {(item.status === 'borrowed' || item.status === 'overdue') && (
+                          <button
+                            type="button"
+                            onClick={() => router.post(`/member/borrowings/${item.id}/return`, {}, { preserveScroll: true })}
+                            className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                          >
+                            Return
+                          </button>
+                        )}
+                      </Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+
+            <Pagination links={borrowings.links} />
+          </>
+        )}
       </div>
     </MemberLayout>
   )

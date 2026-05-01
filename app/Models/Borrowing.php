@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -103,6 +104,11 @@ class Borrowing extends Model
         return $query->whereIn('status', [self::STATUS_BORROWED, self::STATUS_OVERDUE]);
     }
 
+    public function scopeOverdue(Builder $query): Builder
+    {
+        return $query->where('status', self::STATUS_OVERDUE);
+    }
+
     public function calculateFine(?Carbon $at = null): int
     {
         $settings = Setting::current();
@@ -114,5 +120,12 @@ class Borrowing extends Model
         }
 
         return $dueDate->diffInDays($reference) * (int) $settings->fine_per_day;
+    }
+
+    public static function totalFineAmount(?Collection $items = null): int
+    {
+        $borrowings = $items ?? static::query()->with('book')->get();
+
+        return $borrowings->sum(fn (self $borrowing): int => $borrowing->fine_amount);
     }
 }

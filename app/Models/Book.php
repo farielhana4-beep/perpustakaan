@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -22,7 +23,10 @@ class Book extends Model
 
     protected $appends = [
         'image_url',
+        'is_low_stock',
     ];
+
+    public const LOW_STOCK_THRESHOLD = 5;
 
     public function category(): BelongsTo
     {
@@ -41,5 +45,15 @@ class Book extends Model
 
             return $path ? Storage::disk('public')->url($path) : null;
         });
+    }
+
+    protected function isLowStock(): Attribute
+    {
+        return Attribute::get(fn (): bool => (int) $this->stock < self::LOW_STOCK_THRESHOLD);
+    }
+
+    public function scopeLowStock(Builder $query): Builder
+    {
+        return $query->where('stock', '<', self::LOW_STOCK_THRESHOLD);
     }
 }

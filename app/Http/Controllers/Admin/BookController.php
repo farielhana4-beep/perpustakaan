@@ -6,16 +6,53 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\BookRequest;
 use App\Models\Category;
 use App\Models\Book;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class BookController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $query = Book::query()->with('category');
+
+        if ($request->filled('search')) {
+            $search = $request->string('search')->trim()->toString();
+
+            $query->where(function ($builder) use ($search): void {
+                $builder->where('title', 'like', "%{$search}%")
+                    ->orWhere('author', 'like', "%{$search}%")
+                    ->orWhere('isbn', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->integer('category_id'));
+        }
+
+        $stock = $request->string('stock')->toString();
+
+        if ($stock === 'available') {
+            $query->where('stock', '>', 0);
+        }
+
+        if ($stock === 'low_stock') {
+            $query->lowStock();
+        }
+
+        $sort = $request->string('sort')->toString() ?: 'latest';
+
+        if ($sort === 'oldest') {
+            $query->oldest();
+        } else {
+            $query->latest();
+        }
+
         return Inertia::render('Admin/Books/Index', [
-            'books' => Book::with('category')->latest()->get(),
+            'books' => $query->paginate(10)->withQueryString(),
+            'filters' => $request->all(),
+            'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
         ]);
     }
 

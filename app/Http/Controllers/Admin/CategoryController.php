@@ -10,10 +10,26 @@ use Inertia\Inertia;
 
 class CategoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $query = Category::query()->withCount('books');
+
+        if ($request->filled('search')) {
+            $search = $request->string('search')->trim()->toString();
+            $query->where('name', 'like', "%{$search}%");
+        }
+
+        $sort = $request->string('sort')->toString() ?: 'latest';
+
+        if ($sort === 'oldest') {
+            $query->oldest();
+        } else {
+            $query->latest();
+        }
+
         return Inertia::render('Admin/Categories/Index', [
-            'categories' => Category::withCount('books')->latest()->get(),
+            'categories' => $query->paginate(10)->withQueryString(),
+            'filters' => $request->all(),
         ]);
     }
 

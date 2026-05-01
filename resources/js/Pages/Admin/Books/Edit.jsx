@@ -3,18 +3,21 @@ import AdminLayout from '../../../Layouts/AdminLayout'
 
 export default function Edit({ book, categories }) {
   const { flash = {} } = usePage().props
-  const { data, setData, put, processing, errors } = useForm({
+  const { data, setData, post, processing, errors } = useForm({
     title: book.title || '',
     author: book.author || '',
     isbn: book.isbn || '',
     category_id: book.category_id || '',
     stock: book.stock || 0,
     image: null,
+    _method: 'put',
   })
 
   const submit = (e) => {
     e.preventDefault()
-    put(`/admin/books/${book.id}`)
+    post(`/admin/books/${book.id}`, {
+      forceFormData: true,
+    })
   }
 
   return (

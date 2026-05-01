@@ -1,17 +1,25 @@
 import { useState } from 'react'
-import { Head, Link, router, useForm, usePage } from '@inertiajs/react'
+import { Head, Link, router, usePage } from '@inertiajs/react'
+import { EmptyState, TableSkeleton } from '../../../Components/DataStates'
+import Pagination from '../../../Components/Pagination'
+import useIndexFilters from '../../../Hooks/useIndexFilters'
 import MemberLayout from '../../../Layouts/MemberLayout'
+
+const defaultFilters = {
+  search: '',
+  category: '',
+  low_stock: false,
+}
 
 export default function Index({ books, categories, filters }) {
   const { flash = {} } = usePage().props
-  const form = useForm({ search: filters.search ?? '', category: filters.category ?? '' })
+  const { data, setData, applyFilters, resetFilters, isLoading } = useIndexFilters({
+    url: '/member/catalog',
+    defaults: defaultFilters,
+    filters,
+  })
   const [selectedBook, setSelectedBook] = useState(null)
   const [quantity, setQuantity] = useState(1)
-
-  const submit = (e) => {
-    e.preventDefault()
-    router.get('/member/catalog', form.data, { preserveState: true, replace: true })
-  }
 
   const borrowOne = (book) => {
     router.post('/member/borrowings', { book_id: book.id, quantity: 1 }, { preserveScroll: true })
@@ -52,92 +60,125 @@ export default function Index({ books, categories, filters }) {
         {flash.error && <Banner tone="error">{flash.error}</Banner>}
 
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-600">Catalog</p>
-          <h1 className="mt-2 text-3xl font-bold text-slate-900">Book Catalog</h1>
-          <form onSubmit={submit} className="mt-6 grid gap-3 md:grid-cols-[1fr_220px_auto]">
-            <input
-              className="input"
-              placeholder="Search title, author, ISBN"
-              value={form.data.search}
-              onChange={(e) => form.setData('search', e.target.value)}
-            />
-            <select className="input" value={form.data.category} onChange={(e) => form.setData('category', e.target.value)}>
-              <option value="">All categories</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-            <button className="rounded-xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600">
-              Filter
-            </button>
-          </form>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-600">Catalog</p>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <h1 className="text-3xl font-bold text-slate-900">Book Catalog</h1>
+                {isLoading && <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Updating...</span>}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-end gap-3">
+              <input
+                className="input w-72"
+                placeholder="Search title, author, ISBN"
+                value={data.search}
+                onChange={(e) => setData('search', e.target.value)}
+              />
+              <select className="input w-56" value={data.category} onChange={(e) => setData('category', e.target.value)}>
+                <option value="">All categories</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={Boolean(data.low_stock)}
+                  onChange={(e) => setData('low_stock', e.target.checked)}
+                />
+                Low stock only
+              </label>
+              <button
+                type="button"
+                onClick={() => applyFilters()}
+                className="rounded-xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600"
+              >
+                Apply
+              </button>
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
         </section>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {books.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm md:col-span-2 xl:col-span-3">
-              <p className="font-semibold text-slate-900">No books found</p>
-              <p className="mt-2 text-sm text-slate-500">Try changing your search or category filter.</p>
-            </div>
-          ) : (
-            books.map((book) => (
-              <article
-                key={book.id}
-                className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-              >
-                <Link href={`/member/catalog/${book.id}`} className="block">
-                  <div className="aspect-[4/5] overflow-hidden bg-slate-100">
-                    {book.image_url ? (
-                      <img src={book.image_url} alt={book.title} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full items-center justify-center bg-gradient-to-br from-slate-200 to-slate-100 text-sm font-semibold uppercase tracking-[0.25em] text-slate-400">
-                        No cover
+        {isLoading && books.data.length === 0 ? (
+          <TableSkeleton rows={6} columns={3} />
+        ) : books.data.length === 0 ? (
+          <EmptyState title="No books found" description="Try changing your search or category filter." />
+        ) : (
+          <>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {books.data.map((book) => (
+                <article
+                  key={book.id}
+                  className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:scale-[1.01] hover:shadow-md"
+                >
+                  <Link href={`/member/catalog/${book.id}`} className="block">
+                    <div className="aspect-[4/5] overflow-hidden bg-slate-100">
+                      {book.image_url ? (
+                        <img src={book.image_url} alt={book.title} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full items-center justify-center bg-gradient-to-br from-slate-200 to-slate-100 text-sm font-semibold uppercase tracking-[0.25em] text-slate-400">
+                          No cover
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+
+                  <div className="space-y-4 p-5">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-600">
+                          {book.category?.name ?? 'Uncategorized'}
+                        </p>
+                        {book.is_low_stock && <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-600">Low Stock</span>}
                       </div>
-                    )}
-                  </div>
-                </Link>
+                      <Link href={`/member/catalog/${book.id}`} className="mt-2 block">
+                        <h2 className="text-xl font-bold text-slate-900">{book.title}</h2>
+                      </Link>
+                      <p className="mt-2 text-sm text-slate-600">{book.author}</p>
+                    </div>
 
-                <div className="space-y-4 p-5">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-600">
-                      {book.category?.name ?? 'Uncategorized'}
-                    </p>
-                    <Link href={`/member/catalog/${book.id}`} className="mt-2 block">
-                      <h2 className="text-xl font-bold text-slate-900">{book.title}</h2>
-                    </Link>
-                    <p className="mt-2 text-sm text-slate-600">{book.author}</p>
-                  </div>
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 text-sm">
+                      <span className="text-slate-500">Stock</span>
+                      <span className={`font-semibold ${book.stock < 5 ? 'text-red-600' : 'text-slate-900'}`}>{book.stock}</span>
+                    </div>
 
-                  <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 text-sm">
-                    <span className="text-slate-500">Stock</span>
-                    <span className="font-semibold text-slate-900">{book.stock}</span>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => borrowOne(book)}
+                        disabled={book.stock <= 0}
+                        className="rounded-xl bg-sky-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+                      >
+                        Pinjam 1
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openQuantityModal(book)}
+                        disabled={book.stock <= 0}
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                      >
+                        Borrow More
+                      </button>
+                    </div>
                   </div>
+                </article>
+              ))}
+            </div>
 
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      onClick={() => borrowOne(book)}
-                      disabled={book.stock <= 0}
-                      className="rounded-xl bg-sky-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:bg-slate-300"
-                    >
-                      Pinjam 1
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openQuantityModal(book)}
-                      disabled={book.stock <= 0}
-                      className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-                    >
-                      Pinjam Banyak
-                    </button>
-                  </div>
-                </div>
-              </article>
-            ))
-          )}
-        </div>
+            <Pagination links={books.links} />
+          </>
+        )}
       </div>
 
       {selectedBook && (
@@ -150,7 +191,7 @@ export default function Index({ books, categories, filters }) {
         />
       )}
 
-      <style>{`.input{width:100%;border:1px solid #cbd5e1;border-radius:0.75rem;padding:0.75rem 1rem;outline:none;transition:all .15s ease}.input:focus{border-color:#10b981;box-shadow:0 0 0 4px rgba(16,185,129,.12)}`}</style>
+      <style>{`.input{border:1px solid #cbd5e1;border-radius:0.75rem;padding:0.75rem 1rem;outline:none;transition:all .15s ease}.input:focus{border-color:#10b981;box-shadow:0 0 0 4px rgba(16,185,129,.12)}`}</style>
     </MemberLayout>
   )
 }
@@ -182,7 +223,7 @@ function BorrowModal({ book, quantity, setQuantity, onClose, onSubmit }) {
             max={book.stock}
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
-            className="input"
+            className="input w-full"
           />
         </div>
 

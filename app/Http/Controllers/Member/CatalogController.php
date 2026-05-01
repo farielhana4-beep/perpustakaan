@@ -26,12 +26,17 @@ class CatalogController extends Controller
             $query->where('category_id', $categoryId);
         }
 
+        if ($request->boolean('low_stock')) {
+            $query->lowStock();
+        }
+
         return Inertia::render('Member/Catalog/Index', [
-            'books' => $query->get(),
+            'books' => $query->paginate(12)->withQueryString(),
             'categories' => Category::orderBy('name')->get(['id', 'name']),
             'filters' => [
                 'search' => $search ?? '',
                 'category' => $categoryId ?: '',
+                'low_stock' => $request->boolean('low_stock'),
             ],
         ]);
     }

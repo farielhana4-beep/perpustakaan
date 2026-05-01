@@ -18,21 +18,53 @@ class BorrowingController extends Controller
     {
         Borrowing::syncOverdueStatuses();
 
-        $status = $request->string('status')->toString();
         $settings = Setting::current();
+        $query = Borrowing::query()->with(['user', 'book']);
+        $summaryQuery = Borrowing::query();
 
-        $borrowings = Borrowing::with(['user', 'book'])
-            ->forStatus($status)
-            ->orderByDesc('borrowed_at')
-            ->get();
+        if ($request->user()?->role === 'member') {
+            $query->where('user_id', $request->user()->id);
+            $summaryQuery->where('user_id', $request->user()->id);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->string('search')->trim()->toString();
+
+            $query->where(function ($builder) use ($search): void {
+                $builder->whereHas('user', function ($userQuery) use ($search): void {
+                    $userQuery->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                })->orWhereHas('book', function ($bookQuery) use ($search): void {
+                    $bookQuery->where('title', 'like', "%{$search}%")
+                        ->orWhere('author', 'like', "%{$search}%")
+                        ->orWhere('isbn', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        $status = $request->string('status')->toString();
+
+        if ($status !== '') {
+            $query->forStatus($status);
+        }
+
+        if ($request->filled('date')) {
+            $query->whereDate('borrowed_at', $request->date('date'));
+        }
+
+        $sort = $request->string('sort')->toString() ?: 'latest';
+
+        if ($sort === 'oldest') {
+            $query->orderBy('borrowed_at');
+        } else {
+            $query->orderByDesc('borrowed_at');
+        }
 
         return Inertia::render('Admin/Circulation/Index', [
-            'borrowings' => $borrowings,
+            'borrowings' => $query->paginate(10)->withQueryString(),
             'books' => Book::orderBy('title')->get(['id', 'title', 'stock', 'image']),
             'members' => User::where('role', 'member')->orderBy('name')->get(['id', 'name', 'email']),
-            'filters' => [
-                'status' => $status,
-            ],
+            'filters' => $request->all(),
             'statusOptions' => [
                 ['value' => '', 'label' => 'All statuses'],
                 ['value' => Borrowing::STATUS_BORROWED, 'label' => 'Borrowed'],
@@ -42,10 +74,10 @@ class BorrowingController extends Controller
             ],
             'settings' => $settings->only('fine_per_day', 'max_borrow_days', 'currency', 'max_books_per_user'),
             'summary' => [
-                'borrowed' => Borrowing::query()->where('status', Borrowing::STATUS_BORROWED)->count(),
-                'overdue' => Borrowing::query()->where('status', Borrowing::STATUS_OVERDUE)->count(),
-                'returned' => Borrowing::query()->where('status', Borrowing::STATUS_RETURNED)->count(),
-                'lost' => Borrowing::query()->where('status', Borrowing::STATUS_LOST)->count(),
+                'borrowed' => (clone $summaryQuery)->where('status', Borrowing::STATUS_BORROWED)->count(),
+                'overdue' => (clone $summaryQuery)->where('status', Borrowing::STATUS_OVERDUE)->count(),
+                'returned' => (clone $summaryQuery)->where('status', Borrowing::STATUS_RETURNED)->count(),
+                'lost' => (clone $summaryQuery)->where('status', Borrowing::STATUS_LOST)->count(),
             ],
         ]);
     }

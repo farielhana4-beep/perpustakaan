@@ -3,7 +3,7 @@ import MemberLayout from '../../Layouts/MemberLayout'
 import StatusBadge from '../../Components/StatusBadge'
 import { formatCurrency } from '../../Support/currency'
 
-export default function Dashboard({ borrowings, alerts, settings }) {
+export default function Dashboard({ borrowings, alerts, settings, stats }) {
   const { flash = {} } = usePage().props
   const currency = settings?.currency ?? 'IDR'
 
@@ -18,24 +18,33 @@ export default function Dashboard({ borrowings, alerts, settings }) {
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-600">Member Dashboard</p>
           <h1 className="mt-3 text-3xl font-bold text-slate-900">Your Reading Activity</h1>
           <p className="mt-3 text-slate-600">
-            Track active borrowings, due dates, and fines in one place.
+            Track active books, overdue warnings, and live fine amounts from one calm workspace.
           </p>
         </section>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <StatCard label="Active Borrowings" value={stats.active} tone="emerald" />
+          <StatCard label="Overdue Alerts" value={stats.overdue} tone="red" />
+          <StatCard label="Current Fine" value={formatCurrency(stats.fine, currency)} tone="sky" />
+        </div>
 
         <section className="grid gap-4 md:grid-cols-2">
           {alerts.length === 0 ? (
             <EmptyCard title="No active borrowings" description="Borrow a book from the catalog to get started." />
           ) : (
-                alerts.map((item) => (
-                  <div key={item.id} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="font-semibold text-slate-900">{item.title}</p>
-                        <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Qty {item.quantity}</p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          <StatusBadge status={item.status} />
-                        </div>
-                      </div>
+            alerts.map((item) => (
+              <div key={item.id} className={`rounded-2xl border p-6 shadow-sm ${item.status === 'overdue' ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50'}`}>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="font-semibold text-slate-900">{item.title}</p>
+                    <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Qty {item.quantity}</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <StatusBadge status={item.status} />
+                      <span className={item.status === 'overdue' ? 'rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-600' : 'rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700'}>
+                        {item.status === 'overdue' ? 'Return now' : 'Due soon'}
+                      </span>
+                    </div>
+                  </div>
                   <div className="text-right text-sm text-slate-600">
                     <p>Due date</p>
                     <p className="font-semibold text-slate-900">{item.due_date}</p>
@@ -43,17 +52,17 @@ export default function Dashboard({ borrowings, alerts, settings }) {
                 </div>
 
                 <div className="mt-4 grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
-                  <p>Days left: {item.days_left}</p>
+                  <p>{item.days_left < 0 ? `Late by ${Math.abs(item.days_left)} days` : `Days left: ${item.days_left}`}</p>
                   <p>Fine: {formatCurrency(item.fine_amount, currency)}</p>
                 </div>
 
                 <div className="mt-5 flex flex-wrap gap-2">
                   <button
                     type="button"
-                    onClick={() => router.post(`/member/borrowings/${item.id}/return`)}
+                    onClick={() => router.post(`/member/borrowings/${item.id}/return`, {}, { preserveScroll: true })}
                     className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
                   >
-                    Return Book
+                    Return
                   </button>
                   <Link
                     href="/member/catalog"
@@ -69,7 +78,10 @@ export default function Dashboard({ borrowings, alerts, settings }) {
 
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between gap-4">
-            <h2 className="text-lg font-semibold text-slate-900">Current Borrowings</h2>
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">Current Borrowings</h2>
+              <p className="mt-1 text-sm text-slate-500">Realtime status, due date, and fine summary.</p>
+            </div>
             <Link
               href="/member/history"
               className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
@@ -82,16 +94,17 @@ export default function Dashboard({ borrowings, alerts, settings }) {
             {borrowings.length === 0 ? (
               <EmptyCard title="Nothing borrowed yet" description="Visit the catalog to borrow books." />
             ) : (
-                borrowings.map((item) => (
-                  <div key={item.id} className="rounded-2xl border border-slate-200 p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="font-medium text-slate-900">{item.book.title}</p>
-                        <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Qty {item.quantity}</p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          <StatusBadge status={item.status} />
-                        </div>
+              borrowings.map((item) => (
+                <div key={item.id} className="rounded-2xl border border-slate-200 p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-medium text-slate-900">{item.book.title}</p>
+                      <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Qty {item.quantity}</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <StatusBadge status={item.status} />
+                        {item.status === 'overdue' && <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-600">Warning</span>}
                       </div>
+                    </div>
                     <div className="text-right text-sm text-slate-600">
                       <p>Borrowed {formatDate(item.borrowed_at)}</p>
                       <p>Due {formatDate(item.due_date)}</p>
@@ -124,6 +137,21 @@ function Banner({ tone, children }) {
       : 'border-red-200 bg-red-50 text-red-700'
 
   return <div className={`rounded-xl border px-4 py-3 text-sm font-medium shadow-sm ${styles}`}>{children}</div>
+}
+
+function StatCard({ label, value, tone }) {
+  const tones = {
+    emerald: 'from-emerald-50 to-white text-emerald-600',
+    red: 'from-red-50 to-white text-red-600',
+    sky: 'from-sky-50 to-white text-sky-600',
+  }
+
+  return (
+    <div className={`rounded-2xl border border-slate-200 bg-gradient-to-br ${tones[tone]} p-6 shadow-sm`}>
+      <p className="text-sm font-semibold uppercase tracking-[0.25em]">{label}</p>
+      <p className="mt-3 text-3xl font-bold text-slate-900">{value}</p>
+    </div>
+  )
 }
 
 function formatDate(value) {

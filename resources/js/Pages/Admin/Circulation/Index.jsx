@@ -1,27 +1,65 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react'
-import AdminLayout from '../../../Layouts/AdminLayout'
+import { CardSkeleton, EmptyState } from '../../../Components/DataStates'
+import FilterToolbar from '../../../Components/FilterToolbar'
+import Pagination from '../../../Components/Pagination'
 import StatusBadge from '../../../Components/StatusBadge'
+import useIndexFilters from '../../../Hooks/useIndexFilters'
+import AdminLayout from '../../../Layouts/AdminLayout'
 import { formatCurrency } from '../../../Support/currency'
 
-export default function Index({ books, members, borrowings, filters, statusOptions, summary, settings }) {
+const defaultFilters = {
+  search: '',
+  status: '',
+  date: '',
+  sort: 'latest',
+}
+
+export default function Index(props) {
   const { flash = {} } = usePage().props
+  const {
+    books = [],
+    members = [],
+    borrowings = { data: [] },
+    filters = {},
+    statusOptions = [],
+    summary = {},
+    settings = {},
+  } = props ?? {}
+  const safeBooks = books ?? []
+  const safeMembers = members ?? []
+  const safeBorrowings = borrowings ?? { data: [], links: [] }
+  const safeStatusOptions = statusOptions ?? []
+  const borrowingsData = safeBorrowings?.data ?? []
+
   const form = useForm({
     user_id: '',
     book_id: '',
     quantity: 1,
   })
-  const currentStatus = filters?.status ?? ''
+  const {
+    data: filterData,
+    setData: setFilterData,
+    applyFilters,
+    resetFilters,
+    isLoading,
+  } = useIndexFilters({
+    url: '/admin/circulation',
+    defaults: defaultFilters,
+    filters,
+  })
+  console.log('DATA:', safeBorrowings)
+
+  if (!safeBorrowings || !safeBorrowings.data) {
+    return <div>Loading...</div>
+  }
+
   const currency = settings?.currency ?? 'IDR'
-  const selectedBook = books.find((book) => String(book.id) === String(form.data.book_id))
+  const selectedBook = safeBooks.find((book) => String(book.id) === String(form.data.book_id))
   const maxQuantity = selectedBook?.stock ?? 1
 
   const submit = (e) => {
     e.preventDefault()
     form.post('/admin/borrowings')
-  }
-
-  const applyStatus = (status) => {
-    router.get('/admin/circulation', { status }, { preserveState: true, replace: true })
   }
 
   return (
@@ -58,7 +96,7 @@ export default function Index({ books, members, borrowings, filters, statusOptio
                   onChange={(e) => form.setData('user_id', e.target.value)}
                 >
                   <option value="">Select member</option>
-                  {members.map((member) => (
+                  {safeMembers.map((member) => (
                     <option key={member.id} value={member.id}>
                       {member.name}
                     </option>
@@ -76,7 +114,7 @@ export default function Index({ books, members, borrowings, filters, statusOptio
                   }}
                 >
                   <option value="">Select book</option>
-                  {books.map((book) => (
+                  {safeBooks.map((book) => (
                     <option key={book.id} value={book.id}>
                       {book.title} ({book.stock})
                     </option>
@@ -108,29 +146,105 @@ export default function Index({ books, members, borrowings, filters, statusOptio
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">Filter</p>
-                <h2 className="mt-2 text-xl font-bold text-slate-900">Borrowing Status</h2>
+                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">Records</p>
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <h2 className="text-xl font-bold text-slate-900">Circulation History</h2>
+                  {isLoading && <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">Updating...</span>}
+                </div>
               </div>
-              <select
-                value={currentStatus}
-                onChange={(e) => applyStatus(e.target.value)}
-                className="input max-w-48"
-              >
-                {statusOptions.map((option) => (
-                  <option key={option.value || 'all'} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
             </div>
 
-            <div className="mt-4 space-y-3">
-              {borrowings.length === 0 ? (
-                <EmptyState title="No circulation records" description="Borrowed books will appear here." />
+            <div className="mt-5">
+              <FilterToolbar
+                actions={
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => applyFilters()}
+                      className="rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-600"
+                    >
+                      Apply
+                    </button>
+                    <button
+                      type="button"
+                      onClick={resetFilters}
+                      className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Reset
+                    </button>
+                  </>
+                }
+              >
+                <input
+                  placeholder="Search user or book..."
+                  value={filterData.search}
+                  onChange={(e) => setFilterData('search', e.target.value)}
+                  className="w-full min-w-0 rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100 sm:w-64"
+                />
+
+                <select
+                  value={filterData.status}
+                  onChange={(e) => setFilterData('status', e.target.value)}
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                >
+                  {safeStatusOptions.map((option) => (
+                    <option key={option.value || 'all'} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterData('status', 'overdue')
+                    applyFilters({ ...filterData, status: 'overdue' })
+                  }}
+                  className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+                >
+                  Overdue Only
+                </button>
+
+                <input
+                  type="date"
+                  value={filterData.date}
+                  onChange={(e) => setFilterData('date', e.target.value)}
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                />
+
+                <select
+                  value={filterData.sort}
+                  onChange={(e) => setFilterData('sort', e.target.value)}
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                >
+                  <option value="latest">Latest</option>
+                  <option value="oldest">Oldest</option>
+                </select>
+              </FilterToolbar>
+            </div>
+
+            <div className="space-y-3">
+              {isLoading && borrowingsData.length === 0 ? (
+                <CardSkeleton items={4} />
+              ) : borrowingsData?.length === 0 ? (
+                <>
+                  <EmptyState title="No circulation records found" description="Try another status, date, or keyword." />
+                  <div className="py-10 text-center text-gray-400">No data found</div>
+                </>
               ) : (
-                borrowings.map((item) => (
-                  <BorrowingCard key={item.id} item={item} currency={currency} />
-                ))
+                <>
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                    Showing <span className="font-semibold text-slate-700">{safeBorrowings.from ?? 0}</span> to{' '}
+                    <span className="font-semibold text-slate-700">{safeBorrowings.to ?? 0}</span> of{' '}
+                    <span className="font-semibold text-slate-700">{safeBorrowings.total ?? borrowingsData.length}</span> records
+                  </div>
+
+                  {borrowingsData?.map((item) => (
+                    <BorrowingCard key={item.id} item={item} currency={currency} search={filterData.search} />
+                  ))}
+
+                  <Pagination links={safeBorrowings.links ?? []} />
+                </>
               )}
             </div>
           </section>
@@ -142,16 +256,22 @@ export default function Index({ books, members, borrowings, filters, statusOptio
   )
 }
 
-function BorrowingCard({ item, currency }) {
+function BorrowingCard({ item, currency, search }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="font-semibold text-slate-900">{item.book?.title}</p>
-          <p className="mt-1 text-sm text-slate-600">{item.user?.name}</p>
+          <p className="font-semibold text-slate-900">
+            <HighlightedText text={item.book?.title ?? '-'} search={search} />
+          </p>
+          <p className="mt-1 text-sm text-slate-600">
+            <HighlightedText text={item.user?.name ?? '-'} search={search} />
+          </p>
+          <p className="mt-1 text-xs text-slate-500">{item.user?.email ?? '-'}</p>
           <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Qty {item.quantity}</p>
           <div className="mt-3 flex flex-wrap gap-2">
             <StatusBadge status={item.status} />
+            {item.status === 'overdue' && <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-600">Warning</span>}
           </div>
         </div>
         <div className="text-right text-sm text-slate-600">
@@ -167,14 +287,14 @@ function BorrowingCard({ item, currency }) {
           <>
             <button
               type="button"
-              onClick={() => router.post(`/admin/borrowings/${item.id}/return`)}
+              onClick={() => router.post(`/admin/borrowings/${item.id}/return`, {}, { preserveScroll: true })}
               className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600"
             >
               Return
             </button>
             <button
               type="button"
-              onClick={() => router.post(`/admin/borrowings/${item.id}/lost`)}
+              onClick={() => router.post(`/admin/borrowings/${item.id}/lost`, {}, { preserveScroll: true })}
               className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
             >
               Mark Lost
@@ -183,6 +303,28 @@ function BorrowingCard({ item, currency }) {
         )}
       </div>
     </div>
+  )
+}
+
+function HighlightedText({ text, search }) {
+  const safeText = text ?? ''
+
+  if (!search) {
+    return safeText
+  }
+
+  const index = safeText.toLowerCase().indexOf(search.toLowerCase())
+
+  if (index === -1) {
+    return safeText
+  }
+
+  return (
+    <>
+      {safeText.slice(0, index)}
+      <mark className="rounded bg-amber-100 px-1 text-slate-900">{safeText.slice(index, index + search.length)}</mark>
+      {safeText.slice(index + search.length)}
+    </>
   )
 }
 
@@ -206,15 +348,6 @@ function FlashBanner({ tone, message }) {
       : 'border-red-200 bg-red-50 text-red-700'
 
   return <div className={`rounded-xl border px-4 py-3 text-sm font-medium shadow-sm ${styles}`}>{message}</div>
-}
-
-function EmptyState({ title, description }) {
-  return (
-    <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center">
-      <p className="font-semibold text-slate-900">{title}</p>
-      <p className="mt-2 text-sm text-slate-500">{description}</p>
-    </div>
-  )
 }
 
 function Field({ label, children }) {

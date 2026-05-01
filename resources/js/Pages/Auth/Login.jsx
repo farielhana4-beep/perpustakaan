@@ -38,6 +38,12 @@ export default function Login() {
         </button>
       </form>
 
+      <div className="mt-4 text-right">
+        <Link href="/forgot-password" className="text-sm font-medium text-sky-500 hover:text-sky-600">
+          Forgot password?
+        </Link>
+      </div>
+
       <p className="mt-6 text-center text-sm text-slate-600">
         New here?{' '}
         <Link href="/register" className="font-semibold text-sky-700 hover:text-sky-800">

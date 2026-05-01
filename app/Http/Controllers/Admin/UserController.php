@@ -10,10 +10,40 @@ use Inertia\Inertia;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $query = User::query()->select(['id', 'name', 'email', 'role', 'created_at']);
+
+        if ($request->filled('search')) {
+            $search = $request->string('search')->trim()->toString();
+
+            $query->where(function ($builder) use ($search): void {
+                $builder->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('role')) {
+            $query->where('role', $request->string('role')->toString());
+        }
+
+        $sort = $request->string('sort')->toString() ?: 'latest';
+
+        if ($sort === 'oldest') {
+            $query->oldest();
+        } else {
+            $query->latest();
+        }
+
         return Inertia::render('Admin/Users/Index', [
-            'users' => User::latest()->get(['id', 'name', 'email', 'role', 'created_at']),
+            'users' => $query->paginate(10)->withQueryString(),
+            'filters' => $request->all(),
+            'roles' => [
+                ['value' => '', 'label' => 'All Roles'],
+                ['value' => 'super_admin', 'label' => 'Super Admin'],
+                ['value' => 'pustakawan', 'label' => 'Pustakawan'],
+                ['value' => 'member', 'label' => 'Member'],
+            ],
         ]);
     }
 

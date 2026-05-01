@@ -1,4 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react'
+import GlobalSearchBar from '../Components/GlobalSearchBar'
+import NotificationBell from '../Components/NotificationBell'
 
 function NavItem({ href, active, children }) {
   return (
@@ -8,7 +10,7 @@ function NavItem({ href, active, children }) {
         'group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200',
         active
           ? 'bg-slate-800/95 text-white shadow-inner shadow-black/20 ring-1 ring-white/10'
-          : 'text-slate-300 hover:bg-white/5 hover:text-white hover:shadow-sm',
+          : 'text-slate-300 hover:bg-slate-800 hover:text-white hover:shadow-sm',
       ].join(' ')}
     >
       <span className="h-2 w-2 rounded-full bg-current opacity-60 transition group-hover:opacity-100" />
@@ -30,6 +32,7 @@ function roleLabel(role) {
 export default function AdminLayout({ children }) {
   const { url, props } = usePage()
   const user = props.auth?.user
+  const notifications = props.notifications ?? []
 
   const handleLogout = () => {
     router.post('/logout')
@@ -41,12 +44,12 @@ export default function AdminLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 md:flex">
-      <aside className="border-r border-white/10 bg-slate-950 text-white backdrop-blur md:w-80">
+      <aside className="border-r border-white/10 bg-slate-900 text-white backdrop-blur md:w-80">
         <div className="flex min-h-screen flex-col p-5">
           <div className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[0_12px_30px_rgba(15,23,42,0.25)]">
             <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-slate-400">Library</p>
             <h1 className="mt-2 text-2xl font-bold">Perpus Admin</h1>
-            <p className="mt-2 text-sm text-slate-300">Manage books, categories, and circulation.</p>
+            <p className="mt-2 text-sm text-slate-300">Manage books, categories, circulation, and exports.</p>
           </div>
 
           <nav className="space-y-2">
@@ -88,23 +91,31 @@ export default function AdminLayout({ children }) {
 
       <div className="flex min-h-screen flex-1 flex-col">
         <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/80 backdrop-blur">
-          <div className="flex items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8 xl:flex-row xl:items-center xl:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-600">Admin Workspace</p>
               <h2 className="mt-1 text-lg font-semibold text-slate-900">Dashboard</h2>
             </div>
 
-            {user && (
-              <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-2 shadow-sm">
-                <div className="h-10 w-10 rounded-full bg-slate-900 text-sm font-bold text-white flex items-center justify-center">
-                  {user.name?.charAt(0)?.toUpperCase()}
-                </div>
-                <div className="leading-tight">
-                  <p className="text-sm font-semibold text-slate-900">{user.name}</p>
-                  <p className="text-xs text-slate-500">{roleLabel(user.role)}</p>
-                </div>
+            <div className="flex flex-1 flex-col gap-3 xl:max-w-4xl xl:flex-row xl:items-center xl:justify-end">
+              <GlobalSearchBar role={user?.role} />
+
+              <div className="flex items-center justify-end gap-3">
+                <NotificationBell notifications={notifications} />
+
+                {user && (
+                  <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-2 shadow-sm">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-sm font-bold text-white">
+                      {user.name?.charAt(0)?.toUpperCase()}
+                    </div>
+                    <div className="leading-tight">
+                      <p className="text-sm font-semibold text-slate-900">{user.name}</p>
+                      <p className="text-xs text-slate-500">{roleLabel(user.role)}</p>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         </header>
 

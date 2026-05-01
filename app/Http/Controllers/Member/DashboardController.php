@@ -38,6 +38,11 @@ class DashboardController extends Controller
         return Inertia::render('Member/Dashboard', [
             'borrowings' => $borrowings,
             'alerts' => $alerts,
+            'stats' => [
+                'active' => $borrowings->count(),
+                'overdue' => $borrowings->where('status', Borrowing::STATUS_OVERDUE)->count(),
+                'fine' => $borrowings->sum('fine_amount'),
+            ],
             'settings' => $settings->only('fine_per_day', 'max_borrow_days', 'currency', 'max_books_per_user'),
         ]);
     }
