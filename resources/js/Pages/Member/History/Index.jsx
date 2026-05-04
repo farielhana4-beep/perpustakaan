@@ -1,5 +1,7 @@
 import { Head, router, usePage } from '@inertiajs/react'
+import { useState } from 'react'
 import { EmptyState, TableSkeleton } from '../../../Components/DataStates'
+import BorrowingReturnModal from '../../../Components/BorrowingReturnModal'
 import Pagination from '../../../Components/Pagination'
 import useIndexFilters from '../../../Hooks/useIndexFilters'
 import MemberLayout from '../../../Layouts/MemberLayout'
@@ -13,12 +15,47 @@ const defaultFilters = {
 export default function Index({ borrowings, settings, filters, statusOptions }) {
   const { flash = {} } = usePage().props
   const currency = settings?.currency ?? 'IDR'
+  const [returningBorrowing, setReturningBorrowing] = useState(null)
+  const [returnQuantity, setReturnQuantity] = useState(1)
   const { data, setData, applyFilters, resetFilters, isLoading } = useIndexFilters({
     url: '/member/history',
     defaults: defaultFilters,
     filters,
     debounceKeys: [],
   })
+
+  const openReturnModal = (item) => {
+    setReturningBorrowing(item)
+    setReturnQuantity(Math.max(1, Number(item.remaining ?? item.quantity - (item.returned_quantity ?? 0)) || 1))
+  }
+
+  const closeReturnModal = () => {
+    setReturningBorrowing(null)
+    setReturnQuantity(1)
+  }
+
+  const submitPartialReturn = () => {
+    if (!returningBorrowing) {
+      return
+    }
+
+    router.post(
+      `/member/borrowings/${returningBorrowing.id}/return`,
+      { quantity: Number(returnQuantity) || 1 },
+      {
+        preserveScroll: true,
+        onSuccess: closeReturnModal,
+      },
+    )
+  }
+
+  const submitReturnAll = () => {
+    if (!returningBorrowing) {
+      return
+    }
+
+    router.post(`/member/borrowings/${returningBorrowing.id}/return-all`, {}, { preserveScroll: true, onSuccess: closeReturnModal })
+  }
 
   return (
     <MemberLayout>
@@ -65,7 +102,7 @@ export default function Index({ borrowings, settings, filters, statusOptions }) 
         </section>
 
         {isLoading && borrowings.data.length === 0 ? (
-          <TableSkeleton rows={6} columns={8} />
+          <TableSkeleton rows={6} columns={10} />
         ) : borrowings.data.length === 0 ? (
           <EmptyState title="No borrowing history yet" description="Borrowings will appear here once you start using the catalog." />
         ) : (
@@ -83,10 +120,12 @@ export default function Index({ borrowings, settings, filters, statusOptions }) 
                   <tr>
                     <Th>Book</Th>
                     <Th>Qty</Th>
+                    <Th>Returned Qty</Th>
+                    <Th>Remaining</Th>
                     <Th>Status</Th>
                     <Th>Borrowed</Th>
                     <Th>Due</Th>
-                    <Th>Returned</Th>
+                    <Th>Returned At</Th>
                     <Th>Fine</Th>
                     <Th align="right">Action</Th>
                   </tr>
@@ -96,6 +135,8 @@ export default function Index({ borrowings, settings, filters, statusOptions }) 
                     <tr key={item.id} className="hover:bg-slate-50">
                       <Td>{item.book?.title}</Td>
                       <Td>{item.quantity}</Td>
+                      <Td>{item.returned_quantity ?? 0}</Td>
+                      <Td>{item.remaining ?? item.quantity - (item.returned_quantity ?? 0)}</Td>
                       <Td>
                         <div className="flex items-center gap-2">
                           <StatusBadge status={item.status} />
@@ -108,13 +149,22 @@ export default function Index({ borrowings, settings, filters, statusOptions }) 
                       <Td>{formatCurrency(item.fine_amount, currency)}</Td>
                       <Td align="right">
                         {(item.status === 'borrowed' || item.status === 'overdue') && (
-                          <button
-                            type="button"
-                            onClick={() => router.post(`/member/borrowings/${item.id}/return`, {}, { preserveScroll: true })}
-                            className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
-                          >
-                            Return
-                          </button>
+                          <div className="flex flex-wrap justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => openReturnModal(item)}
+                              className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                            >
+                              Return Some
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => router.post(`/member/borrowings/${item.id}/return-all`, {}, { preserveScroll: true })}
+                              className="rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600"
+                            >
+                              Return All
+                            </button>
+                          </div>
                         )}
                       </Td>
                     </tr>
@@ -127,6 +177,15 @@ export default function Index({ borrowings, settings, filters, statusOptions }) 
           </>
         )}
       </div>
+
+      <BorrowingReturnModal
+        borrowing={returningBorrowing}
+        quantity={returnQuantity}
+        setQuantity={setReturnQuantity}
+        onClose={closeReturnModal}
+        onPartialReturn={submitPartialReturn}
+        onReturnAll={submitReturnAll}
+      />
     </MemberLayout>
   )
 }

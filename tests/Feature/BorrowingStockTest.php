@@ -46,13 +46,29 @@ class BorrowingStockTest extends TestCase
 
         $borrowing = Borrowing::query()->firstOrFail();
 
-        $returnResponse = $this->actingAs($member)->post("/member/borrowings/{$borrowing->id}/return");
+        $partialResponse = $this->actingAs($member)->post("/member/borrowings/{$borrowing->id}/return", [
+            'quantity' => 2,
+        ]);
 
-        $returnResponse->assertRedirect();
+        $partialResponse->assertRedirect();
 
         $borrowing->refresh();
         $book->refresh();
 
+        $this->assertSame(2, $borrowing->returned_quantity);
+        $this->assertSame(1, $borrowing->remaining);
+        $this->assertSame(Borrowing::STATUS_BORROWED, $borrowing->status);
+        $this->assertSame(9, $book->stock);
+
+        $returnAllResponse = $this->actingAs($member)->post("/member/borrowings/{$borrowing->id}/return-all");
+
+        $returnAllResponse->assertRedirect();
+
+        $borrowing->refresh();
+        $book->refresh();
+
+        $this->assertSame(3, $borrowing->returned_quantity);
+        $this->assertSame(0, $borrowing->remaining);
         $this->assertSame(Borrowing::STATUS_RETURNED, $borrowing->status);
         $this->assertSame(10, $book->stock);
     }

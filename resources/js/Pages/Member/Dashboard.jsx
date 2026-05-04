@@ -1,4 +1,6 @@
 import { Head, router, Link, usePage } from '@inertiajs/react'
+import { useState } from 'react'
+import BorrowingReturnModal from '../../Components/BorrowingReturnModal'
 import MemberLayout from '../../Layouts/MemberLayout'
 import StatusBadge from '../../Components/StatusBadge'
 import { formatCurrency } from '../../Support/currency'
@@ -6,6 +8,41 @@ import { formatCurrency } from '../../Support/currency'
 export default function Dashboard({ borrowings, alerts, settings, stats }) {
   const { flash = {} } = usePage().props
   const currency = settings?.currency ?? 'IDR'
+  const [returningBorrowing, setReturningBorrowing] = useState(null)
+  const [returnQuantity, setReturnQuantity] = useState(1)
+
+  const openReturnModal = (item) => {
+    setReturningBorrowing(item)
+    setReturnQuantity(Math.max(1, Number(item.remaining ?? item.quantity - (item.returned_quantity ?? 0)) || 1))
+  }
+
+  const closeReturnModal = () => {
+    setReturningBorrowing(null)
+    setReturnQuantity(1)
+  }
+
+  const submitPartialReturn = () => {
+    if (!returningBorrowing) {
+      return
+    }
+
+    router.post(
+      `/member/borrowings/${returningBorrowing.id}/return`,
+      { quantity: Number(returnQuantity) || 1 },
+      {
+        preserveScroll: true,
+        onSuccess: closeReturnModal,
+      },
+    )
+  }
+
+  const submitReturnAll = () => {
+    if (!returningBorrowing) {
+      return
+    }
+
+    router.post(`/member/borrowings/${returningBorrowing.id}/return-all`, {}, { preserveScroll: true, onSuccess: closeReturnModal })
+  }
 
   return (
     <MemberLayout>
@@ -38,6 +75,8 @@ export default function Dashboard({ borrowings, alerts, settings, stats }) {
                   <div>
                     <p className="font-semibold text-slate-900">{item.title}</p>
                     <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Qty {item.quantity}</p>
+                    <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Returned {item.returned_quantity ?? 0}</p>
+                    <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Remaining {item.remaining ?? item.quantity - (item.returned_quantity ?? 0)}</p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       <StatusBadge status={item.status} />
                       <span className={item.status === 'overdue' ? 'rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-600' : 'rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700'}>
@@ -59,10 +98,17 @@ export default function Dashboard({ borrowings, alerts, settings, stats }) {
                 <div className="mt-5 flex flex-wrap gap-2">
                   <button
                     type="button"
-                    onClick={() => router.post(`/member/borrowings/${item.id}/return`, {}, { preserveScroll: true })}
+                    onClick={() => openReturnModal(item)}
                     className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
                   >
-                    Return
+                    Return Some
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => router.post(`/member/borrowings/${item.id}/return-all`, {}, { preserveScroll: true })}
+                    className="rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600"
+                  >
+                    Return All
                   </button>
                   <Link
                     href="/member/catalog"
@@ -100,6 +146,8 @@ export default function Dashboard({ borrowings, alerts, settings, stats }) {
                     <div>
                       <p className="font-medium text-slate-900">{item.book.title}</p>
                       <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Qty {item.quantity}</p>
+                      <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Returned {item.returned_quantity ?? 0}</p>
+                      <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Remaining {item.remaining ?? item.quantity - (item.returned_quantity ?? 0)}</p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         <StatusBadge status={item.status} />
                         {item.status === 'overdue' && <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-600">Warning</span>}
@@ -111,11 +159,38 @@ export default function Dashboard({ borrowings, alerts, settings, stats }) {
                       <p>Fine {formatCurrency(item.fine_amount, currency)}</p>
                     </div>
                   </div>
+                  {(item.status === 'borrowed' || item.status === 'overdue') && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openReturnModal(item)}
+                        className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                      >
+                        Return Some
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => router.post(`/member/borrowings/${item.id}/return-all`, {}, { preserveScroll: true })}
+                        className="rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600"
+                      >
+                        Return All
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))
             )}
           </div>
         </section>
+
+        <BorrowingReturnModal
+          borrowing={returningBorrowing}
+          quantity={returnQuantity}
+          setQuantity={setReturnQuantity}
+          onClose={closeReturnModal}
+          onPartialReturn={submitPartialReturn}
+          onReturnAll={submitReturnAll}
+        />
       </div>
     </MemberLayout>
   )

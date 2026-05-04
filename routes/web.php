@@ -9,13 +9,16 @@ use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
-use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\Member\CatalogController;
 use App\Http\Controllers\Member\DashboardController as MemberDashboardController;
 use App\Http\Controllers\Member\HistoryController;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,8 +43,26 @@ Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
     Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
 
-    Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
-    Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
+    Route::get('/forgot-password', function () {
+        return Inertia::render('Auth/ForgotPassword');
+    })->name('password.request');
+
+    Route::post('/forgot-password', function (Request $request) {
+        $request->validate(['email' => 'required|email']);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (! $user || $user->role !== 'member') {
+            return back()->withErrors(['email' => 'Only members can reset password']);
+        }
+
+        $status = Password::sendResetLink($request->only('email'));
+
+        return $status === Password::RESET_LINK_SENT
+            ? back()->with('status', __($status))
+            : back()->withErrors(['email' => __($status)]);
+    })->name('password.email');
+
     Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
     Route::post('/reset-password', [NewPasswordController::class, 'store'])->name('password.update');
 });
@@ -110,6 +131,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/circulation', [BorrowingController::class, 'index'])->name('borrowings.index');
             Route::post('/borrowings', [BorrowingController::class, 'store'])->name('borrowings.store');
             Route::post('/borrowings/{borrowing}/return', [BorrowingController::class, 'returnBook'])->name('borrowings.return');
+            Route::post('/borrowings/{borrowing}/return-all', [BorrowingController::class, 'returnAll'])->name('borrowings.return-all');
             Route::post('/borrowings/{borrowing}/lost', [BorrowingController::class, 'markLost'])->name('borrowings.lost');
         });
 
@@ -133,6 +155,7 @@ Route::middleware('auth')->group(function () {
             // Borrow (consistent naming)
             Route::post('/borrowings', [BorrowingController::class, 'store'])->name('borrowings.store');
             Route::post('/borrowings/{borrowing}/return', [BorrowingController::class, 'returnBook'])->name('borrowings.return');
+            Route::post('/borrowings/{borrowing}/return-all', [BorrowingController::class, 'returnAll'])->name('borrowings.return-all');
 
             // History
             Route::get('/history', [HistoryController::class, 'index'])->name('history.index');

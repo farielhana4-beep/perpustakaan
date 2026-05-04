@@ -1,11 +1,13 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react'
 import { CardSkeleton, EmptyState } from '../../../Components/DataStates'
 import FilterToolbar from '../../../Components/FilterToolbar'
+import BorrowingReturnModal from '../../../Components/BorrowingReturnModal'
 import Pagination from '../../../Components/Pagination'
 import StatusBadge from '../../../Components/StatusBadge'
 import useIndexFilters from '../../../Hooks/useIndexFilters'
 import AdminLayout from '../../../Layouts/AdminLayout'
 import { formatCurrency } from '../../../Support/currency'
+import { useState } from 'react'
 
 const defaultFilters = {
   search: '',
@@ -30,6 +32,8 @@ export default function Index(props) {
   const safeBorrowings = borrowings ?? { data: [], links: [] }
   const safeStatusOptions = statusOptions ?? []
   const borrowingsData = safeBorrowings?.data ?? []
+  const [returningBorrowing, setReturningBorrowing] = useState(null)
+  const [returnQuantity, setReturnQuantity] = useState(1)
 
   const form = useForm({
     user_id: '',
@@ -47,8 +51,6 @@ export default function Index(props) {
     defaults: defaultFilters,
     filters,
   })
-  console.log('DATA:', safeBorrowings)
-
   if (!safeBorrowings || !safeBorrowings.data) {
     return <div>Loading...</div>
   }
@@ -56,6 +58,39 @@ export default function Index(props) {
   const currency = settings?.currency ?? 'IDR'
   const selectedBook = safeBooks.find((book) => String(book.id) === String(form.data.book_id))
   const maxQuantity = selectedBook?.stock ?? 1
+
+  const openReturnModal = (item) => {
+    setReturningBorrowing(item)
+    setReturnQuantity(Math.max(1, Number(item.remaining ?? item.quantity - (item.returned_quantity ?? 0)) || 1))
+  }
+
+  const closeReturnModal = () => {
+    setReturningBorrowing(null)
+    setReturnQuantity(1)
+  }
+
+  const submitPartialReturn = () => {
+    if (!returningBorrowing) {
+      return
+    }
+
+    router.post(
+      `/admin/borrowings/${returningBorrowing.id}/return`,
+      { quantity: Number(returnQuantity) || 1 },
+      {
+        preserveScroll: true,
+        onSuccess: closeReturnModal,
+      },
+    )
+  }
+
+  const submitReturnAll = () => {
+    if (!returningBorrowing) {
+      return
+    }
+
+    router.post(`/admin/borrowings/${returningBorrowing.id}/return-all`, {}, { preserveScroll: true, onSuccess: closeReturnModal })
+  }
 
   const submit = (e) => {
     e.preventDefault()
@@ -240,7 +275,13 @@ export default function Index(props) {
                   </div>
 
                   {borrowingsData?.map((item) => (
-                    <BorrowingCard key={item.id} item={item} currency={currency} search={filterData.search} />
+                    <BorrowingCard
+                      key={item.id}
+                      item={item}
+                      currency={currency}
+                      search={filterData.search}
+                      onOpenReturnModal={openReturnModal}
+                    />
                   ))}
 
                   <Pagination links={safeBorrowings.links ?? []} />
@@ -251,12 +292,23 @@ export default function Index(props) {
         </div>
       </div>
 
+      <BorrowingReturnModal
+        borrowing={returningBorrowing}
+        quantity={returnQuantity}
+        setQuantity={setReturnQuantity}
+        onClose={closeReturnModal}
+        onPartialReturn={submitPartialReturn}
+        onReturnAll={submitReturnAll}
+      />
+
       <style>{`.input{width:100%;border:1px solid #cbd5e1;border-radius:0.9rem;padding:0.8rem 1rem;outline:none;transition:all .15s ease;background:white}.input:focus{border-color:#0284c7;box-shadow:0 0 0 4px rgba(14,165,233,.12)}`}</style>
     </AdminLayout>
   )
 }
 
-function BorrowingCard({ item, currency, search }) {
+function BorrowingCard({ item, currency, search, onOpenReturnModal }) {
+  const remaining = item.remaining ?? item.quantity - (item.returned_quantity ?? 0)
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
       <div className="flex items-start justify-between gap-4">
@@ -269,6 +321,8 @@ function BorrowingCard({ item, currency, search }) {
           </p>
           <p className="mt-1 text-xs text-slate-500">{item.user?.email ?? '-'}</p>
           <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Qty {item.quantity}</p>
+          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Returned {item.returned_quantity ?? 0}</p>
+          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Remaining {remaining}</p>
           <div className="mt-3 flex flex-wrap gap-2">
             <StatusBadge status={item.status} />
             {item.status === 'overdue' && <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-600">Warning</span>}
@@ -287,10 +341,17 @@ function BorrowingCard({ item, currency, search }) {
           <>
             <button
               type="button"
-              onClick={() => router.post(`/admin/borrowings/${item.id}/return`, {}, { preserveScroll: true })}
+              onClick={() => onOpenReturnModal(item)}
               className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600"
             >
-              Return
+              Return Some
+            </button>
+            <button
+              type="button"
+              onClick={() => router.post(`/admin/borrowings/${item.id}/return-all`, {}, { preserveScroll: true })}
+              className="rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600"
+            >
+              Return All
             </button>
             <button
               type="button"

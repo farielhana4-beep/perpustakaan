@@ -25,7 +25,7 @@ class PasswordResetLinkController extends Controller
 
         if (! $user || $user->role !== 'member') {
             return back()->withErrors([
-                'email' => 'Password reset is only available for members.',
+                'email' => 'Only members can reset password.',
             ]);
         }
 

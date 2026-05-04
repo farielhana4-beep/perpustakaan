@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\BorrowNotification;
+use App\Mail\ReturnNotification;
 use App\Http\Requests\Admin\StoreBorrowingRequest;
 use App\Models\Book;
 use App\Models\Borrowing;
@@ -10,6 +12,8 @@ use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class BorrowingController extends Controller
@@ -90,11 +94,13 @@ class BorrowingController extends Controller
         $data = $request->validated();
         $quantity = (int) $data['quantity'];
         $targetUserId = $isMemberRequest ? $request->user()->id : (int) $data['user_id'];
+        $borrowing = null;
 
-        $activeQuantity = Borrowing::query()
+        $activeQuantity = (int) (Borrowing::query()
             ->where('user_id', $targetUserId)
             ->active()
-            ->sum('quantity');
+            ->selectRaw('COALESCE(SUM(quantity - COALESCE(returned_quantity, 0)), 0) as active_quantity')
+            ->first()?->active_quantity ?? 0);
 
         if (($activeQuantity + $quantity) > $settings->max_books_per_user) {
             return back()->with('error', 'User has reached the borrowing limit.');
@@ -103,7 +109,7 @@ class BorrowingController extends Controller
         $failed = false;
         $message = null;
 
-        DB::transaction(function () use ($data, $targetUserId, $settings, $quantity, &$failed, &$message): void {
+        DB::transaction(function () use ($data, $targetUserId, $settings, $quantity, &$failed, &$message, &$borrowing): void {
             $book = Book::lockForUpdate()->findOrFail($data['book_id']);
 
             if ($book->stock < $quantity) {
@@ -113,10 +119,11 @@ class BorrowingController extends Controller
                 return;
             }
 
-            Borrowing::create([
+            $borrowing = Borrowing::create([
                 'user_id' => $targetUserId,
                 'book_id' => $book->id,
                 'quantity' => $quantity,
+                'returned_quantity' => 0,
                 'borrowed_at' => now(),
                 'due_date' => now()->addDays($settings->max_borrow_days),
                 'returned_at' => null,
@@ -131,7 +138,13 @@ class BorrowingController extends Controller
             return back()->with('error', $message);
         }
 
-        return back()->with('success', 'Book borrowed');
+        if ($borrowing) {
+            $borrowing->loadMissing(['user', 'book']);
+
+            Mail::to($borrowing->user->email)->send(new BorrowNotification($borrowing));
+        }
+
+        return back()->with('success', 'Book borrowed. Email notification sent.');
     }
 
     public function returnBook(Request $request, Borrowing $borrowing)
@@ -142,19 +155,95 @@ class BorrowingController extends Controller
             return back()->with('error', 'Borrowing already closed');
         }
 
+        try {
+            $data = $request->validate([
+                'quantity' => ['required', 'integer', 'min:1'],
+            ]);
+
+            DB::transaction(function () use ($borrowing, $data): void {
+                $borrowing = Borrowing::query()->lockForUpdate()->findOrFail($borrowing->id);
+
+                if (in_array($borrowing->status, [Borrowing::STATUS_RETURNED, Borrowing::STATUS_LOST], true)) {
+                    throw ValidationException::withMessages([
+                        'quantity' => 'Borrowing already closed',
+                    ]);
+                }
+
+                $quantity = (int) $data['quantity'];
+                $remaining = $borrowing->remaining;
+
+                if ($quantity > $remaining) {
+                    throw ValidationException::withMessages([
+                        'quantity' => 'Return exceeds borrowed amount',
+                    ]);
+                }
+
+                $book = Book::lockForUpdate()->findOrFail($borrowing->book_id);
+
+                $borrowing->increment('returned_quantity', $quantity);
+                $book->increment('stock', $quantity);
+
+                if ($borrowing->remaining === 0) {
+                    $borrowing->update([
+                        'returned_at' => now(),
+                        'status' => Borrowing::STATUS_RETURNED,
+                        'fine' => $borrowing->calculateFine(now()),
+                    ]);
+                }
+            });
+        } catch (ValidationException $exception) {
+            return back()->withErrors($exception->errors());
+        }
+
+        $borrowing->refresh()->loadMissing(['user', 'book']);
+
+        Mail::to($borrowing->user->email)->send(new ReturnNotification($borrowing));
+
+        return back()->with('success', 'Book returned. Email notification sent.');
+    }
+
+    public function returnAll(Request $request, Borrowing $borrowing)
+    {
+        $this->authorizeBorrowing($request, $borrowing);
+
+        if (in_array($borrowing->status, [Borrowing::STATUS_RETURNED, Borrowing::STATUS_LOST], true)) {
+            return back()->with('error', 'Borrowing already closed');
+        }
+
         DB::transaction(function () use ($borrowing): void {
+            $borrowing = Borrowing::query()->lockForUpdate()->findOrFail($borrowing->id);
+
+            if (in_array($borrowing->status, [Borrowing::STATUS_RETURNED, Borrowing::STATUS_LOST], true)) {
+                throw ValidationException::withMessages([
+                    'quantity' => 'Borrowing already closed',
+                ]);
+            }
+
+            $remaining = $borrowing->remaining;
+
+            if ($remaining <= 0) {
+                throw ValidationException::withMessages([
+                    'quantity' => 'Borrowing already closed',
+                ]);
+            }
+
             $book = Book::lockForUpdate()->findOrFail($borrowing->book_id);
 
             $borrowing->update([
+                'returned_quantity' => $borrowing->quantity,
                 'returned_at' => now(),
                 'status' => Borrowing::STATUS_RETURNED,
                 'fine' => $borrowing->calculateFine(now()),
             ]);
 
-            $book->increment('stock', $borrowing->quantity);
+            $book->increment('stock', $remaining);
         });
 
-        return back()->with('success', 'Book returned');
+        $borrowing->refresh()->loadMissing(['user', 'book']);
+
+        Mail::to($borrowing->user->email)->send(new ReturnNotification($borrowing));
+
+        return back()->with('success', 'Book returned. Email notification sent.');
     }
 
     public function markLost(Request $request, Borrowing $borrowing)

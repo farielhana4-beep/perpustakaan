@@ -18,7 +18,7 @@ export default function ForgotPassword() {
       <div>
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">Member Access</p>
         <h1 className="mt-3 text-3xl font-bold text-slate-900">Forgot password</h1>
-        <p className="mt-2 text-sm text-slate-600">Enter your member email and we will send a reset link to the application log.</p>
+        <p className="mt-2 text-sm text-slate-600">Enter your member email and we will send a reset link to your inbox.</p>
       </div>
 
       {flash.success && (

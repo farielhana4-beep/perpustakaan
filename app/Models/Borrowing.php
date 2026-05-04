@@ -20,6 +20,7 @@ class Borrowing extends Model
         'user_id',
         'book_id',
         'quantity',
+        'returned_quantity',
         'borrowed_at',
         'due_date',
         'returned_at',
@@ -34,6 +35,7 @@ class Borrowing extends Model
             'due_date' => 'datetime',
             'returned_at' => 'datetime',
             'quantity' => 'integer',
+            'returned_quantity' => 'integer',
             'fine' => 'integer',
         ];
     }
@@ -41,6 +43,7 @@ class Borrowing extends Model
     protected $appends = [
         'fine_amount',
         'is_overdue',
+        'remaining',
     ];
 
     public static function syncOverdueStatuses(): int
@@ -60,6 +63,11 @@ class Borrowing extends Model
     public function book(): BelongsTo
     {
         return $this->belongsTo(Book::class);
+    }
+
+    public function getRemainingAttribute(): int
+    {
+        return max(0, (int) $this->quantity - (int) $this->returned_quantity);
     }
 
     protected function fineAmount(): Attribute
