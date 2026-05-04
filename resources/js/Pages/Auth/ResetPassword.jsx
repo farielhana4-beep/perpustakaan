@@ -1,11 +1,11 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react'
 import AuthLayout from '../../Layouts/AuthLayout'
 
-export default function ResetPassword({ token = '', email = '' }) {
+export default function ResetPassword({ email = '' }) {
   const { flash = {} } = usePage().props
   const { data, setData, post, processing, errors } = useForm({
-    token,
     email,
+    otp: '',
     password: '',
     password_confirmation: '',
   })
@@ -21,7 +21,7 @@ export default function ResetPassword({ token = '', email = '' }) {
       <div>
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">Member Access</p>
         <h1 className="mt-3 text-3xl font-bold text-slate-900">Reset password</h1>
-        <p className="mt-2 text-sm text-slate-600">Set a new password for your member account.</p>
+        <p className="mt-2 text-sm text-slate-600">Enter the OTP from your email and set a new password for your member account.</p>
       </div>
 
       {flash.success && (
@@ -31,14 +31,23 @@ export default function ResetPassword({ token = '', email = '' }) {
       )}
 
       <form onSubmit={submit} className="mt-8 space-y-5">
-        <input type="hidden" value={data.token} />
-
         <Field label="Email" error={errors.email}>
           <input
             className="input"
             type="email"
             value={data.email}
             onChange={(e) => setData('email', e.target.value)}
+          />
+        </Field>
+
+        <Field label="OTP" error={errors.otp}>
+          <input
+            className="input"
+            type="text"
+            inputMode="numeric"
+            maxLength={6}
+            value={data.otp}
+            onChange={(e) => setData('otp', e.target.value)}
           />
         </Field>
 

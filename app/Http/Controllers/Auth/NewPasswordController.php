@@ -4,20 +4,18 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rules\Password as PasswordRule;
 use Inertia\Inertia;
 
 class NewPasswordController extends Controller
 {
-    public function create(Request $request, string $token)
+    public function create(Request $request)
     {
         return Inertia::render('Auth/ResetPassword', [
-            'token' => $token,
             'email' => $request->string('email')->toString(),
         ]);
     }
@@ -25,12 +23,13 @@ class NewPasswordController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'token' => ['required'],
             'email' => ['required', 'email'],
+            'otp' => ['required', 'digits:6'],
             'password' => ['required', 'confirmed', PasswordRule::min(8)],
         ]);
 
-        $user = User::query()->where('email', $request->string('email')->toString())->first();
+        $email = $request->string('email')->toString();
+        $user = User::query()->where('email', $email)->first();
 
         if (! $user || $user->role !== 'member') {
             return back()->withErrors([
@@ -38,24 +37,22 @@ class NewPasswordController extends Controller
             ]);
         }
 
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user) use ($request): void {
-                $user->forceFill([
-                    'password' => Hash::make($request->string('password')->toString()),
-                    'remember_token' => Str::random(60),
-                ])->save();
+        $record = DB::table('password_otps')
+            ->where('email', $email)
+            ->where('otp', $request->string('otp')->toString())
+            ->first();
 
-                event(new PasswordReset($user));
-            }
-        );
-
-        if ($status === Password::PASSWORD_RESET) {
-            return redirect()->route('login')->with('success', 'Password updated successfully.');
+        if (! $record || now()->gt(Carbon::parse($record->expires_at))) {
+            return back()->withErrors([
+                'otp' => 'Invalid or expired OTP',
+            ]);
         }
 
-        return back()->withErrors([
-            'email' => __($status),
-        ]);
+        User::where('email', $email)
+            ->update(['password' => Hash::make($request->string('password')->toString())]);
+
+        DB::table('password_otps')->where('email', $email)->delete();
+
+        return redirect()->route('login')->with('success', 'Password updated successfully.');
     }
 }

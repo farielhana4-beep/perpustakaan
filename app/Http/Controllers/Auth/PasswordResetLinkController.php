@@ -5,7 +5,8 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 
 class PasswordResetLinkController extends Controller
@@ -29,16 +30,26 @@ class PasswordResetLinkController extends Controller
             ]);
         }
 
-        $status = Password::sendResetLink(
-            $request->only('email')
+        $otp = random_int(100000, 999999);
+        $now = now();
+        $email = $request->string('email')->toString();
+
+        DB::table('password_otps')->updateOrInsert(
+            ['email' => $email],
+            [
+                'otp' => (string) $otp,
+                'expires_at' => $now->copy()->addMinutes(5),
+                'updated_at' => $now,
+                'created_at' => $now,
+            ]
         );
 
-        if ($status !== Password::RESET_LINK_SENT) {
-            return back()->withErrors([
-                'email' => __($status),
-            ]);
-        }
+        Mail::raw("Your OTP is: {$otp}", function ($message) use ($email): void {
+            $message->to($email)->subject('Reset Password OTP');
+        });
 
-        return back()->with('success', 'Reset link sent');
+        return redirect()
+            ->route('password.reset', ['email' => $email])
+            ->with('success', 'OTP sent to your email.');
     }
 }

@@ -18,7 +18,7 @@ export default function ForgotPassword() {
       <div>
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">Member Access</p>
         <h1 className="mt-3 text-3xl font-bold text-slate-900">Forgot password</h1>
-        <p className="mt-2 text-sm text-slate-600">Enter your member email and we will send a reset link to your inbox.</p>
+        <p className="mt-2 text-sm text-slate-600">Enter your member email and we will send a 6-digit OTP to your inbox.</p>
       </div>
 
       {flash.success && (
@@ -42,7 +42,7 @@ export default function ForgotPassword() {
           disabled={processing}
           className="w-full rounded-xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:opacity-60"
         >
-          {processing ? 'Sending link...' : 'Send reset link'}
+          {processing ? 'Sending OTP...' : 'Send OTP'}
         </button>
       </form>
 
