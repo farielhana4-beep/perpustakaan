@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Mail\OtpMail;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +27,7 @@ class PasswordResetLinkController extends Controller
 
         if (! $user || $user->role !== 'member') {
             return back()->withErrors([
-                'email' => 'Only members can reset password.',
+                'email' => 'Hanya anggota yang dapat mereset kata sandi.',
             ]);
         }
 
@@ -44,12 +45,10 @@ class PasswordResetLinkController extends Controller
             ]
         );
 
-        Mail::raw("Your OTP is: {$otp}", function ($message) use ($email): void {
-            $message->to($email)->subject('Reset Password OTP');
-        });
+        Mail::to($email)->send(new OtpMail($otp));
 
         return redirect()
             ->route('password.reset', ['email' => $email])
-            ->with('success', 'OTP sent to your email.');
+            ->with('success', 'OTP telah dikirim ke email Anda.');
     }
 }

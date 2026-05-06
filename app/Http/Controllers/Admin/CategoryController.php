@@ -42,7 +42,7 @@ class CategoryController extends Controller
     {
         Category::create($this->validated($request));
 
-        return redirect()->route('admin.categories.index')->with('success', 'Category saved');
+        return redirect()->route('admin.categories.index')->with('success', __('messages.flash.category_saved'));
     }
 
     public function edit(Category $category)
@@ -56,14 +56,14 @@ class CategoryController extends Controller
     {
         $category->update($this->validated($request));
 
-        return redirect()->route('admin.categories.index')->with('success', 'Category saved');
+        return redirect()->route('admin.categories.index')->with('success', __('messages.flash.category_saved'));
     }
 
     public function destroy(Category $category)
     {
         $category->delete();
 
-        return redirect()->route('admin.categories.index')->with('success', 'Category deleted');
+        return redirect()->route('admin.categories.index')->with('success', __('messages.flash.category_deleted'));
     }
 
     private function validated(Request $request): array

@@ -1,7 +1,8 @@
-import { Head, Link, useForm } from '@inertiajs/react'
+import { Head, Link, useForm, usePage } from '@inertiajs/react'
 import AuthLayout from '../../Layouts/AuthLayout'
 
 export default function Register() {
+  const { t = {} } = usePage().props
   const { data, setData, post, processing, errors } = useForm({
     name: '',
     email: '',
@@ -16,55 +17,36 @@ export default function Register() {
 
   return (
     <AuthLayout>
-      <Head title="Register" />
+      <Head title={t?.auth?.create_account_title} />
       <div>
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">Library System</p>
-        <h1 className="mt-3 text-3xl font-bold text-slate-900">Create account</h1>
-        <p className="mt-2 text-sm text-slate-600">Register as a member to browse and borrow books.</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">{t?.common?.library_system}</p>
+        <h1 className="mt-3 text-3xl font-bold text-slate-900">{t?.auth?.create_account}</h1>
+        <p className="mt-2 text-sm text-slate-600">{t?.auth?.register_hint}</p>
       </div>
 
       <form onSubmit={submit} className="mt-8 space-y-5">
-        <Field label="Name" error={errors.name}>
+        <Field label={t?.form?.name} error={errors.name}>
           <input className="input" value={data.name} onChange={(e) => setData('name', e.target.value)} />
         </Field>
-        <Field label="Email" error={errors.email}>
-          <input
-            className="input"
-            type="email"
-            value={data.email}
-            onChange={(e) => setData('email', e.target.value)}
-          />
+        <Field label={t?.form?.email} error={errors.email}>
+          <input className="input" type="email" value={data.email} onChange={(e) => setData('email', e.target.value)} />
         </Field>
-        <Field label="Password" error={errors.password}>
-          <input
-            className="input"
-            type="password"
-            value={data.password}
-            onChange={(e) => setData('password', e.target.value)}
-          />
+        <Field label={t?.form?.password} error={errors.password}>
+          <input className="input" type="password" value={data.password} onChange={(e) => setData('password', e.target.value)} />
         </Field>
-        <Field label="Confirm Password" error={errors.password_confirmation}>
-          <input
-            className="input"
-            type="password"
-            value={data.password_confirmation}
-            onChange={(e) => setData('password_confirmation', e.target.value)}
-          />
+        <Field label={t?.form?.confirm_password} error={errors.password_confirmation}>
+          <input className="input" type="password" value={data.password_confirmation} onChange={(e) => setData('password_confirmation', e.target.value)} />
         </Field>
 
-        <button
-          type="submit"
-          disabled={processing}
-          className="w-full rounded-xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {processing ? 'Creating account...' : 'Register'}
+        <button type="submit" disabled={processing} className="w-full rounded-xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60">
+          {processing ? t?.common?.creating_account : t?.auth?.create_account}
         </button>
       </form>
 
       <p className="mt-6 text-center text-sm text-slate-600">
-        Already have an account?{' '}
+        {t?.auth?.already_have_account}{' '}
         <Link href="/login" className="font-semibold text-sky-700 hover:text-sky-800">
-          Sign in
+          {t?.auth?.sign_in}
         </Link>
       </p>
 

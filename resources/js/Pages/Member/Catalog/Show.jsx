@@ -1,9 +1,9 @@
-import { useState } from 'react'
 import { Head, router, usePage } from '@inertiajs/react'
+import { useState } from 'react'
 import MemberLayout from '../../../Layouts/MemberLayout'
 
 export default function Show({ book }) {
-  const { flash = {} } = usePage().props
+  const { flash = {}, t = {}, locale = 'id' } = usePage().props
   const [quantity, setQuantity] = useState(1)
   const [open, setOpen] = useState(false)
 
@@ -38,22 +38,22 @@ export default function Show({ book }) {
               <img src={book.image_url} alt={book.title} className="h-full w-full object-cover" />
             ) : (
               <div className="flex aspect-[4/5] items-center justify-center bg-gradient-to-br from-slate-200 to-slate-100 text-sm font-semibold uppercase tracking-[0.25em] text-slate-400">
-                No cover
+                {t?.catalog?.no_cover}
               </div>
             )}
           </div>
 
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-600">
-              {book.category?.name ?? 'Uncategorized'}
+              {book.category?.name ?? t?.catalog?.no_category}
             </p>
             <h1 className="mt-3 text-4xl font-bold text-slate-900">{book.title}</h1>
-            <p className="mt-3 text-slate-600">By {book.author}</p>
+            <p className="mt-3 text-slate-600">{t?.books?.by_author} {book.author}</p>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              <Meta label="ISBN" value={book.isbn ?? '-'} />
-              <Meta label="Stock" value={book.stock} />
-              <Meta label="Availability" value={book.stock > 0 ? 'Available' : 'Unavailable'} />
+              <Meta label={t?.table?.isbn} value={book.isbn ?? '-'} />
+              <Meta label={t?.form?.stock} value={book.stock} />
+              <Meta label={t?.catalog?.available} value={book.stock > 0 ? t?.catalog?.available : t?.catalog?.unavailable} />
             </div>
 
             <div className="mt-8 flex flex-wrap gap-3">
@@ -62,7 +62,7 @@ export default function Show({ book }) {
                 disabled={book.stock <= 0}
                 className="rounded-xl bg-sky-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                Pinjam 1
+                {t?.buttons?.borrow_one}
               </button>
               <button
                 type="button"
@@ -70,7 +70,7 @@ export default function Show({ book }) {
                 disabled={book.stock <= 0}
                 className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
               >
-                Pinjam Banyak
+                {t?.buttons?.borrow_more}
               </button>
             </div>
           </div>
@@ -82,21 +82,21 @@ export default function Show({ book }) {
           <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-600">Pinjam Banyak</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-600">{t?.buttons?.borrow_more}</p>
                 <h2 className="mt-2 text-xl font-bold text-slate-900">{book.title}</h2>
-                <p className="mt-1 text-sm text-slate-600">Stock tersedia: {book.stock}</p>
+                <p className="mt-1 text-sm text-slate-600">{t?.books?.stock_available} {book.stock}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 className="rounded-lg border border-slate-200 px-3 py-1 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
               >
-                Close
+                {t?.buttons?.close}
               </button>
             </div>
 
             <div className="mt-5">
-              <label className="mb-2 block text-sm font-semibold text-slate-700">Quantity</label>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">{t?.form?.quantity}</label>
               <input
                 type="number"
                 min="1"
@@ -113,14 +113,14 @@ export default function Show({ book }) {
                 onClick={() => setOpen(false)}
                 className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
-                Cancel
+                {t?.buttons?.cancel}
               </button>
               <button
                 type="button"
                 onClick={submitMany}
                 className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600"
               >
-                Borrow
+                {t?.buttons?.borrow}
               </button>
             </div>
           </div>

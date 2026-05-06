@@ -70,7 +70,7 @@ class BookController extends Controller
 
         Book::create($data);
 
-        return redirect()->route('admin.books.index')->with('success', 'Book saved');
+        return redirect()->route('admin.books.index')->with('success', __('messages.flash.book_saved'));
     }
 
     public function edit(Book $book)
@@ -98,7 +98,7 @@ class BookController extends Controller
 
         $book->update($data);
 
-        return redirect()->route('admin.books.index')->with('success', 'Book saved');
+        return redirect()->route('admin.books.index')->with('success', __('messages.flash.book_saved'));
     }
 
     public function destroy(Book $book)
@@ -108,7 +108,7 @@ class BookController extends Controller
 
         return redirect()
             ->route('admin.books.index')
-            ->with('success', 'Book deleted successfully.');
+            ->with('success', __('messages.flash.book_deleted'));
     }
 
     private function storeImage(?UploadedFile $image): ?string

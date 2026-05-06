@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\Book;
 use App\Models\Borrowing;
 use App\Models\Setting;
+use Illuminate\Support\Facades\App;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -40,6 +41,8 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+            'locale' => App::getLocale(),
+            't' => trans('messages'),
             'auth' => [
                 'user' => fn () => $request->user()
                     ? $request->user()->only('id', 'name', 'email', 'role')
@@ -92,10 +95,10 @@ class HandleInertiaRequests extends Middleware
 
                     return [
                         'id' => $borrowing->id,
-                        'title' => $borrowing->book?->title ?? 'Borrowing',
+                        'title' => $borrowing->book?->title ?? __('messages.member.latest_borrowings'),
                         'message' => $daysLeft < 0
-                            ? 'Book overdue. Return it as soon as possible.'
-                            : 'Due soon. Please return before the deadline.',
+                            ? __('messages.notifications.book_overdue')
+                            : __('messages.notifications.due_soon_message'),
                         'status' => $daysLeft < 0 ? Borrowing::STATUS_OVERDUE : 'due_soon',
                         'due_date' => optional($borrowing->due_date)->toDateString(),
                         'days_left' => $daysLeft,
@@ -108,14 +111,14 @@ class HandleInertiaRequests extends Middleware
         return [
             [
                 'id' => 'low-stock',
-                'title' => 'Low stock books',
-                'message' => Book::query()->lowStock()->count() . ' books need restock attention.',
+                'title' => __('messages.notifications.low_stock_books'),
+                'message' => Book::query()->lowStock()->count() . ' ' . __('messages.dashboard.books_need_restock'),
                 'status' => 'alert',
             ],
             [
                 'id' => 'overdue',
-                'title' => 'Overdue borrowings',
-                'message' => Borrowing::query()->overdue()->count() . ' borrowing records are overdue right now.',
+                'title' => __('messages.notifications.borrowing_overdue'),
+                'message' => Borrowing::query()->overdue()->count() . ' ' . __('messages.notifications.borrowing_overdue'),
                 'status' => Borrowing::STATUS_OVERDUE,
             ],
         ];

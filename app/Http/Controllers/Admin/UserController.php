@@ -39,10 +39,10 @@ class UserController extends Controller
             'users' => $query->paginate(10)->withQueryString(),
             'filters' => $request->all(),
             'roles' => [
-                ['value' => '', 'label' => 'All Roles'],
-                ['value' => 'super_admin', 'label' => 'Super Admin'],
-                ['value' => 'pustakawan', 'label' => 'Pustakawan'],
-                ['value' => 'member', 'label' => 'Member'],
+                ['value' => '', 'label' => __('messages.form.all_roles')],
+                ['value' => 'super_admin', 'label' => __('messages.roles.super_admin')],
+                ['value' => 'pustakawan', 'label' => __('messages.roles.pustakawan')],
+                ['value' => 'member', 'label' => __('messages.roles.member')],
             ],
         ]);
     }
@@ -68,7 +68,7 @@ class UserController extends Controller
             'password' => Hash::make($data['password']),
         ]);
 
-        return redirect()->route('admin.users.index')->with('success', 'User created');
+        return redirect()->route('admin.users.index')->with('success', __('messages.flash.user_created'));
     }
 
     public function edit(User $user)
@@ -97,13 +97,13 @@ class UserController extends Controller
 
         $user->save();
 
-        return redirect()->route('admin.users.index')->with('success', 'User updated');
+        return redirect()->route('admin.users.index')->with('success', __('messages.flash.user_updated'));
     }
 
     public function destroy(User $user)
     {
         $user->delete();
 
-        return redirect()->route('admin.users.index')->with('success', 'User deleted');
+        return redirect()->route('admin.users.index')->with('success', __('messages.flash.user_deleted'));
     }
 }

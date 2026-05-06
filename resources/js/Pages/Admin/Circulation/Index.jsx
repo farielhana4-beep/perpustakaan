@@ -1,4 +1,5 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react'
+import { useState } from 'react'
 import { CardSkeleton, EmptyState } from '../../../Components/DataStates'
 import FilterToolbar from '../../../Components/FilterToolbar'
 import BorrowingReturnModal from '../../../Components/BorrowingReturnModal'
@@ -7,7 +8,6 @@ import StatusBadge from '../../../Components/StatusBadge'
 import useIndexFilters from '../../../Hooks/useIndexFilters'
 import AdminLayout from '../../../Layouts/AdminLayout'
 import { formatCurrency } from '../../../Support/currency'
-import { useState } from 'react'
 
 const defaultFilters = {
   search: '',
@@ -17,7 +17,8 @@ const defaultFilters = {
 }
 
 export default function Index(props) {
-  const { flash = {} } = usePage().props
+  const page = usePage()
+  const { flash = {}, t = {}, locale = 'id' } = page.props
   const {
     books = [],
     members = [],
@@ -51,8 +52,9 @@ export default function Index(props) {
     defaults: defaultFilters,
     filters,
   })
+
   if (!safeBorrowings || !safeBorrowings.data) {
-    return <div>Loading...</div>
+    return <div>{t?.common?.loading}</div>
   }
 
   const currency = settings?.currency ?? 'IDR'
@@ -70,9 +72,7 @@ export default function Index(props) {
   }
 
   const submitPartialReturn = () => {
-    if (!returningBorrowing) {
-      return
-    }
+    if (!returningBorrowing) return
 
     router.post(
       `/admin/borrowings/${returningBorrowing.id}/return`,
@@ -85,9 +85,7 @@ export default function Index(props) {
   }
 
   const submitReturnAll = () => {
-    if (!returningBorrowing) {
-      return
-    }
+    if (!returningBorrowing) return
 
     router.post(`/admin/borrowings/${returningBorrowing.id}/return-all`, {}, { preserveScroll: true, onSuccess: closeReturnModal })
   }
@@ -99,38 +97,34 @@ export default function Index(props) {
 
   return (
     <AdminLayout>
-      <Head title="Circulation" />
+      <Head title={t?.circulation?.title} />
       <div className="mx-auto max-w-7xl space-y-6">
         <FlashBanner tone="success" message={flash.success} />
         <FlashBanner tone="error" message={flash.error} />
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <Stat label="Borrowed" value={summary?.borrowed ?? 0} />
-          <Stat label="Overdue" value={summary?.overdue ?? 0} />
-          <Stat label="Returned" value={summary?.returned ?? 0} />
-          <Stat label="Lost" value={summary?.lost ?? 0} />
+          <Stat label={t?.status?.borrowed} value={summary?.borrowed ?? 0} />
+          <Stat label={t?.status?.overdue} value={summary?.overdue ?? 0} />
+          <Stat label={t?.status?.returned} value={summary?.returned ?? 0} />
+          <Stat label={t?.status?.lost} value={summary?.lost ?? 0} />
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">Circulation</p>
-                <h1 className="mt-2 text-3xl font-bold text-slate-900">Borrow Books</h1>
+                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">{t?.circulation?.title}</p>
+                <h1 className="mt-2 text-3xl font-bold text-slate-900">{t?.circulation?.borrow_books}</h1>
                 <p className="mt-2 text-sm text-slate-600">
-                  Max {settings?.max_books_per_user ?? 3} active books per user, due in {settings?.max_borrow_days ?? 7} days.
+                  {t?.circulation?.max_active_books?.replace('{books}', settings?.max_books_per_user ?? 3)?.replace('{days}', settings?.max_borrow_days ?? 7)}
                 </p>
               </div>
             </div>
 
             <form onSubmit={submit} className="mt-6 grid gap-4">
-              <Field label="Member">
-                <select
-                  className="input"
-                  value={form.data.user_id}
-                  onChange={(e) => form.setData('user_id', e.target.value)}
-                >
-                  <option value="">Select member</option>
+              <Field label={t?.circulation?.member}>
+                <select className="input" value={form.data.user_id} onChange={(e) => form.setData('user_id', e.target.value)}>
+                  <option value="">{t?.circulation?.select_member}</option>
                   {safeMembers.map((member) => (
                     <option key={member.id} value={member.id}>
                       {member.name}
@@ -139,7 +133,7 @@ export default function Index(props) {
                 </select>
                 {form.errors.user_id && <p className="mt-2 text-sm text-red-600">{form.errors.user_id}</p>}
               </Field>
-              <Field label="Book">
+              <Field label={t?.circulation?.book}>
                 <select
                   className="input"
                   value={form.data.book_id}
@@ -148,7 +142,7 @@ export default function Index(props) {
                     form.setData('quantity', 1)
                   }}
                 >
-                  <option value="">Select book</option>
+                  <option value="">{t?.circulation?.select_book}</option>
                   {safeBooks.map((book) => (
                     <option key={book.id} value={book.id}>
                       {book.title} ({book.stock})
@@ -157,7 +151,7 @@ export default function Index(props) {
                 </select>
                 {form.errors.book_id && <p className="mt-2 text-sm text-red-600">{form.errors.book_id}</p>}
               </Field>
-              <Field label="Quantity">
+              <Field label={t?.form?.quantity}>
                 <input
                   type="number"
                   min="1"
@@ -166,14 +160,16 @@ export default function Index(props) {
                   onChange={(e) => form.setData('quantity', e.target.value)}
                   className="input"
                 />
-                <p className="mt-2 text-xs text-slate-500">Max available stock: {selectedBook?.stock ?? '-'}</p>
+                <p className="mt-2 text-xs text-slate-500">
+                  {t?.circulation?.max_available_stock} {selectedBook?.stock ?? '-'}
+                </p>
                 {form.errors.quantity && <p className="mt-2 text-sm text-red-600">{form.errors.quantity}</p>}
               </Field>
               <button
                 disabled={form.processing}
                 className="inline-flex w-fit items-center rounded-xl bg-sky-500 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {form.processing ? 'Saving...' : 'Borrow Book'}
+                {form.processing ? t?.common?.saving : t?.circulation?.borrow_button}
               </button>
             </form>
           </section>
@@ -181,10 +177,10 @@ export default function Index(props) {
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">Records</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">{t?.circulation?.records}</p>
                 <div className="mt-2 flex flex-wrap items-center gap-3">
-                  <h2 className="text-xl font-bold text-slate-900">Circulation History</h2>
-                  {isLoading && <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">Updating...</span>}
+                  <h2 className="text-xl font-bold text-slate-900">{t?.circulation?.history}</h2>
+                  {isLoading && <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">{t?.common?.updating}</span>}
                 </div>
               </div>
             </div>
@@ -193,25 +189,17 @@ export default function Index(props) {
               <FilterToolbar
                 actions={
                   <>
-                    <button
-                      type="button"
-                      onClick={() => applyFilters()}
-                      className="rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-600"
-                    >
-                      Apply
+                    <button type="button" onClick={() => applyFilters()} className="rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-600">
+                      {t?.buttons?.apply}
                     </button>
-                    <button
-                      type="button"
-                      onClick={resetFilters}
-                      className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                    >
-                      Reset
+                    <button type="button" onClick={resetFilters} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                      {t?.buttons?.reset}
                     </button>
                   </>
                 }
               >
                 <input
-                  placeholder="Search user or book..."
+                  placeholder={t?.circulation?.search_user_book}
                   value={filterData.search}
                   onChange={(e) => setFilterData('search', e.target.value)}
                   className="w-full min-w-0 rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100 sm:w-64"
@@ -237,7 +225,7 @@ export default function Index(props) {
                   }}
                   className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100"
                 >
-                  Overdue Only
+                  {t?.circulation?.overdue_only}
                 </button>
 
                 <input
@@ -252,8 +240,8 @@ export default function Index(props) {
                   onChange={(e) => setFilterData('sort', e.target.value)}
                   className="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                 >
-                  <option value="latest">Latest</option>
-                  <option value="oldest">Oldest</option>
+                  <option value="latest">{t?.books?.latest}</option>
+                  <option value="oldest">{t?.books?.oldest}</option>
                 </select>
               </FilterToolbar>
             </div>
@@ -263,25 +251,19 @@ export default function Index(props) {
                 <CardSkeleton items={4} />
               ) : borrowingsData?.length === 0 ? (
                 <>
-                  <EmptyState title="No circulation records found" description="Try another status, date, or keyword." />
-                  <div className="py-10 text-center text-gray-400">No data found</div>
+                  <EmptyState title={t?.circulation?.no_records_found} description={t?.circulation?.try_other} />
+                  <div className="py-10 text-center text-gray-400">{t?.empty?.no_data}</div>
                 </>
               ) : (
                 <>
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-                    Showing <span className="font-semibold text-slate-700">{safeBorrowings.from ?? 0}</span> to{' '}
-                    <span className="font-semibold text-slate-700">{safeBorrowings.to ?? 0}</span> of{' '}
-                    <span className="font-semibold text-slate-700">{safeBorrowings.total ?? borrowingsData.length}</span> records
+                    {t?.books?.showing} <span className="font-semibold text-slate-700">{safeBorrowings.from ?? 0}</span> {t?.books?.from}{' '}
+                    <span className="font-semibold text-slate-700">{safeBorrowings.to ?? 0}</span> {t?.books?.to}{' '}
+                    <span className="font-semibold text-slate-700">{safeBorrowings.total ?? borrowingsData.length}</span> {t?.circulation?.records_summary}
                   </div>
 
                   {borrowingsData?.map((item) => (
-                    <BorrowingCard
-                      key={item.id}
-                      item={item}
-                      currency={currency}
-                      search={filterData.search}
-                      onOpenReturnModal={openReturnModal}
-                    />
+                    <BorrowingCard key={item.id} item={item} currency={currency} search={filterData.search} onOpenReturnModal={openReturnModal} t={t} locale={locale} />
                   ))}
 
                   <Pagination links={safeBorrowings.links ?? []} />
@@ -306,7 +288,7 @@ export default function Index(props) {
   )
 }
 
-function BorrowingCard({ item, currency, search, onOpenReturnModal }) {
+function BorrowingCard({ item, currency, search, onOpenReturnModal, t, locale }) {
   const remaining = item.remaining ?? item.quantity - (item.returned_quantity ?? 0)
 
   return (
@@ -320,19 +302,33 @@ function BorrowingCard({ item, currency, search, onOpenReturnModal }) {
             <HighlightedText text={item.user?.name ?? '-'} search={search} />
           </p>
           <p className="mt-1 text-xs text-slate-500">{item.user?.email ?? '-'}</p>
-          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Qty {item.quantity}</p>
-          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Returned {item.returned_quantity ?? 0}</p>
-          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Remaining {remaining}</p>
+          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+            {t?.form?.quantity} {item.quantity}
+          </p>
+          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+            {t?.circulation?.returned_qty} {item.returned_quantity ?? 0}
+          </p>
+          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+            {t?.circulation?.remaining} {remaining}
+          </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <StatusBadge status={item.status} />
-            {item.status === 'overdue' && <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-600">Warning</span>}
+            {item.status === 'overdue' && <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-600">{t?.notifications?.alert}</span>}
           </div>
         </div>
         <div className="text-right text-sm text-slate-600">
-          <p>Borrowed: {formatDate(item.borrowed_at)}</p>
-          <p>Due: {formatDate(item.due_date)}</p>
-          <p>Returned: {item.returned_at ? formatDate(item.returned_at) : '-'}</p>
-          <p className="font-medium text-slate-900">Fine: {formatCurrency(item.fine_amount, currency)}</p>
+          <p>
+            {t?.circulation?.borrowed}: {formatDate(item.borrowed_at, locale)}
+          </p>
+          <p>
+            {t?.circulation?.due}: {formatDate(item.due_date, locale)}
+          </p>
+          <p>
+            {t?.circulation?.returned_at}: {item.returned_at ? formatDate(item.returned_at, locale) : '-'}
+          </p>
+          <p className="font-medium text-slate-900">
+            {t?.circulation?.fine}: {formatCurrency(item.fine_amount, currency)}
+          </p>
         </div>
       </div>
 
@@ -344,21 +340,21 @@ function BorrowingCard({ item, currency, search, onOpenReturnModal }) {
               onClick={() => onOpenReturnModal(item)}
               className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600"
             >
-              Return Some
+              {t?.actions?.return_some}
             </button>
             <button
               type="button"
               onClick={() => router.post(`/admin/borrowings/${item.id}/return-all`, {}, { preserveScroll: true })}
               className="rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600"
             >
-              Return All
+              {t?.actions?.return_all}
             </button>
             <button
               type="button"
               onClick={() => router.post(`/admin/borrowings/${item.id}/lost`, {}, { preserveScroll: true })}
               className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
             >
-              Mark Lost
+              {t?.actions?.mark_lost}
             </button>
           </>
         )}
@@ -370,15 +366,10 @@ function BorrowingCard({ item, currency, search, onOpenReturnModal }) {
 function HighlightedText({ text, search }) {
   const safeText = text ?? ''
 
-  if (!search) {
-    return safeText
-  }
+  if (!search) return safeText
 
   const index = safeText.toLowerCase().indexOf(search.toLowerCase())
-
-  if (index === -1) {
-    return safeText
-  }
+  if (index === -1) return safeText
 
   return (
     <>
@@ -420,10 +411,10 @@ function Field({ label, children }) {
   )
 }
 
-function formatDate(value) {
+function formatDate(value, locale) {
   if (!value) return '-'
 
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(locale === 'id' ? 'id-ID' : 'en-US', {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value))

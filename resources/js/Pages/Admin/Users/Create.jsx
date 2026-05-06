@@ -2,7 +2,8 @@ import { Head, Link, useForm, usePage } from '@inertiajs/react'
 import AdminLayout from '../../../Layouts/AdminLayout'
 
 export default function Create() {
-  const { flash = {} } = usePage().props
+  const page = usePage()
+  const { flash = {}, t = {} } = page.props
   const { data, setData, post, processing, errors } = useForm({
     name: '',
     email: '',
@@ -17,9 +18,9 @@ export default function Create() {
 
   return (
     <AdminLayout>
-      <Head title="Add User" />
+      <Head title={t?.users?.add_title} />
       <FormShell
-        title="Add User"
+        title={t?.users?.add_title}
         href="/admin/users"
         flash={flash}
         onSubmit={submit}
@@ -27,51 +28,48 @@ export default function Create() {
         errors={errors}
         data={data}
         setData={setData}
-        submitLabel="Save User"
+        submitLabel={t?.users?.save_button}
+        t={t}
       />
     </AdminLayout>
   )
 }
 
-function FormShell({ title, href, flash, onSubmit, processing, errors, data, setData, submitLabel }) {
+function FormShell({ title, href, flash, onSubmit, processing, errors, data, setData, submitLabel, t = {} }) {
   return (
     <div className="mx-auto max-w-2xl">
       {flash.success && <Flash>{flash.success}</Flash>}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">Users</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">{t?.users?.title}</p>
           <h1 className="mt-2 text-3xl font-bold text-slate-900">{title}</h1>
         </div>
         <Link href={href} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">
-          Back
+          {t?.buttons?.back}
         </Link>
       </div>
 
       <form onSubmit={onSubmit} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="grid gap-5">
-          <Field label="Name" error={errors.name}>
+          <Field label={t?.form?.name} error={errors.name}>
             <input className="input" value={data.name} onChange={(e) => setData('name', e.target.value)} />
           </Field>
-          <Field label="Email" error={errors.email}>
+          <Field label={t?.form?.email} error={errors.email}>
             <input className="input" type="email" value={data.email} onChange={(e) => setData('email', e.target.value)} />
           </Field>
-          <Field label="Role" error={errors.role}>
+          <Field label={t?.form?.role} error={errors.role}>
             <select className="input" value={data.role} onChange={(e) => setData('role', e.target.value)}>
-              <option value="super_admin">super_admin</option>
-              <option value="pustakawan">pustakawan</option>
-              <option value="member">member</option>
+              <option value="super_admin">{t?.roles?.super_admin}</option>
+              <option value="pustakawan">{t?.roles?.pustakawan}</option>
+              <option value="member">{t?.roles?.member}</option>
             </select>
           </Field>
-          <Field label="Password" error={errors.password}>
+          <Field label={t?.form?.password} error={errors.password}>
             <input className="input" type="password" value={data.password} onChange={(e) => setData('password', e.target.value)} />
           </Field>
         </div>
-        <button
-          type="submit"
-          disabled={processing}
-          className="mt-6 rounded-xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:opacity-60"
-        >
-          {processing ? 'Saving...' : submitLabel}
+        <button type="submit" disabled={processing} className="mt-6 rounded-xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:opacity-60">
+          {processing ? t?.common?.saving : submitLabel}
         </button>
       </form>
       <style>{`.input{width:100%;border:1px solid #cbd5e1;border-radius:0.75rem;padding:0.75rem 1rem;outline:none;transition:all .15s ease}.input:focus{border-color:#0284c7;box-shadow:0 0 0 4px rgba(14,165,233,.12)}`}</style>
@@ -90,9 +88,5 @@ function Field({ label, error, children }) {
 }
 
 function Flash({ children }) {
-  return (
-    <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
-      {children}
-    </div>
-  )
+  return <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{children}</div>
 }

@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react'
+import { Link, usePage } from '@inertiajs/react'
 import { useEffect, useMemo, useState } from 'react'
 
 const EMPTY_RESULTS = {
@@ -8,6 +8,8 @@ const EMPTY_RESULTS = {
 }
 
 export default function GlobalSearchBar({ role = 'member' }) {
+  const page = usePage()
+  const { t = {}, locale = 'id' } = page.props
   const [search, setSearch] = useState('')
   const [results, setResults] = useState(EMPTY_RESULTS)
   const [open, setOpen] = useState(false)
@@ -55,13 +57,13 @@ export default function GlobalSearchBar({ role = 'member' }) {
 
   const totalResults = useMemo(
     () => (results?.books?.length ?? 0) + (results?.users?.length ?? 0) + (results?.borrowings?.length ?? 0),
-    [results]
+    [results],
   )
 
   return (
     <div className="relative w-full max-w-xl">
       <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-        <span className="text-slate-400">Search</span>
+        <span className="text-slate-400">{t?.form?.search_books_users_borrowings?.split(',')?.[0]}</span>
         <input
           value={search}
           onChange={(e) => {
@@ -69,10 +71,10 @@ export default function GlobalSearchBar({ role = 'member' }) {
             setOpen(true)
           }}
           onFocus={() => setOpen(true)}
-          placeholder="Search books, users, borrowings..."
+          placeholder={t?.form?.search_books_users_borrowings}
           className="w-full border-0 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
         />
-        {loading && <span className="text-xs font-semibold text-sky-600">Searching...</span>}
+        {loading && <span className="text-xs font-semibold text-sky-600">{t?.common?.loading}</span>}
       </div>
 
       {open && ((search?.trim() ?? '') || loading) && (
@@ -85,49 +87,43 @@ export default function GlobalSearchBar({ role = 'member' }) {
             </div>
           ) : totalResults > 0 ? (
             <div className="border border-slate-200 p-2">
-              <Section
-                title="Books"
-                items={results?.books ?? []}
-                render={(item) => (
+              <Section title={t?.nav?.books} items={results?.books ?? []}>
+                {(item) => (
                   <LinkItem
                     href={role === 'member' ? `/member/catalog/${item.id}` : '/admin/books'}
                     title={item.title}
-                    meta={`${item.author} • Stock ${item.stock}`}
+                    meta={`${item.author} - ${t?.form?.stock} ${item.stock}`}
                     onClick={() => setOpen(false)}
                   />
                 )}
-              />
+              </Section>
 
               {role !== 'member' && (
-                <Section
-                  title="Users"
-                  items={results?.users ?? []}
-                  render={(item) => (
+                <Section title={t?.nav?.users} items={results?.users ?? []}>
+                  {(item) => (
                     <LinkItem
                       href="/admin/users"
                       title={item.name}
-                      meta={`${item.email} • ${item.role}`}
+                      meta={`${item.email} - ${t?.roles?.[item.role] ?? item.role}`}
                       onClick={() => setOpen(false)}
                     />
                   )}
-                />
+                </Section>
               )}
 
-              <Section
-                title="Borrowings"
-                items={results?.borrowings ?? []}
-                render={(item) => (
+              <Section title={t?.circulation?.title} items={results?.borrowings ?? []}>
+                {(item) => (
                   <LinkItem
                     href={role === 'member' ? '/member/history' : '/admin/circulation'}
-                    title={item.book?.title ?? 'Borrowing'}
-                    meta={`${item.user?.name ?? '-'} • ${item.status}`}
+                    title={item.book?.title || t?.circulation?.title}
+                    meta={`${item.user?.name ?? '-'} - ${t?.status?.[item.status] ?? item.status}`}
                     onClick={() => setOpen(false)}
                   />
                 )}
-              />
+              </Section>
             </div>
           ) : (
-            <p className="p-4 text-sm text-gray-400">No results</p>
+            <p className="p-4 text-sm text-gray-400">{t?.empty?.no_results}</p>
           )}
         </div>
       )}
@@ -135,14 +131,14 @@ export default function GlobalSearchBar({ role = 'member' }) {
   )
 }
 
-function Section({ title, items, render }) {
+function Section({ title, items, children }) {
   return (
     <div className="border-b border-slate-100 last:border-b-0">
       <p className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{title}</p>
       {items?.length > 0 ? (
-        <div className="pb-2">{items.map(render)}</div>
+        <div className="pb-2">{items.map(children)}</div>
       ) : (
-        <p className="p-4 text-sm text-gray-400">No results</p>
+        <p className="p-4 text-sm text-gray-400">-</p>
       )}
     </div>
   )

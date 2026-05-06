@@ -70,11 +70,11 @@ class BorrowingController extends Controller
             'members' => User::where('role', 'member')->orderBy('name')->get(['id', 'name', 'email']),
             'filters' => $request->all(),
             'statusOptions' => [
-                ['value' => '', 'label' => 'All statuses'],
-                ['value' => Borrowing::STATUS_BORROWED, 'label' => 'Borrowed'],
-                ['value' => Borrowing::STATUS_OVERDUE, 'label' => 'Overdue'],
-                ['value' => Borrowing::STATUS_RETURNED, 'label' => 'Returned'],
-                ['value' => Borrowing::STATUS_LOST, 'label' => 'Lost'],
+                ['value' => '', 'label' => __('messages.status.all')],
+                ['value' => Borrowing::STATUS_BORROWED, 'label' => __('messages.status.borrowed')],
+                ['value' => Borrowing::STATUS_OVERDUE, 'label' => __('messages.status.overdue')],
+                ['value' => Borrowing::STATUS_RETURNED, 'label' => __('messages.status.returned')],
+                ['value' => Borrowing::STATUS_LOST, 'label' => __('messages.status.lost')],
             ],
             'settings' => $settings->only('fine_per_day', 'max_borrow_days', 'currency', 'max_books_per_user'),
             'summary' => [
@@ -103,7 +103,7 @@ class BorrowingController extends Controller
             ->first()?->active_quantity ?? 0);
 
         if (($activeQuantity + $quantity) > $settings->max_books_per_user) {
-            return back()->with('error', 'User has reached the borrowing limit.');
+            return back()->with('error', __('messages.flash.borrowing_limit'));
         }
 
         $failed = false;
@@ -114,7 +114,7 @@ class BorrowingController extends Controller
 
             if ($book->stock < $quantity) {
                 $failed = true;
-                $message = 'Stock tidak mencukupi';
+                $message = __('messages.flash.stock_not_enough');
 
                 return;
             }
@@ -144,7 +144,7 @@ class BorrowingController extends Controller
             Mail::to($borrowing->user->email)->send(new BorrowNotification($borrowing));
         }
 
-        return back()->with('success', 'Book borrowed. Email notification sent.');
+        return back()->with('success', __('messages.flash.borrow_success'));
     }
 
     public function returnBook(Request $request, Borrowing $borrowing)
@@ -152,7 +152,7 @@ class BorrowingController extends Controller
         $this->authorizeBorrowing($request, $borrowing);
 
         if (in_array($borrowing->status, [Borrowing::STATUS_RETURNED, Borrowing::STATUS_LOST], true)) {
-            return back()->with('error', 'Borrowing already closed');
+            return back()->with('error', __('messages.flash.borrowing_closed'));
         }
 
         try {
@@ -165,7 +165,7 @@ class BorrowingController extends Controller
 
                 if (in_array($borrowing->status, [Borrowing::STATUS_RETURNED, Borrowing::STATUS_LOST], true)) {
                     throw ValidationException::withMessages([
-                        'quantity' => 'Borrowing already closed',
+                        'quantity' => __('messages.flash.borrowing_closed'),
                     ]);
                 }
 
@@ -174,7 +174,7 @@ class BorrowingController extends Controller
 
                 if ($quantity > $remaining) {
                     throw ValidationException::withMessages([
-                        'quantity' => 'Return exceeds borrowed amount',
+                        'quantity' => __('messages.flash.return_exceeds'),
                     ]);
                 }
 
@@ -199,7 +199,7 @@ class BorrowingController extends Controller
 
         Mail::to($borrowing->user->email)->send(new ReturnNotification($borrowing));
 
-        return back()->with('success', 'Book returned. Email notification sent.');
+        return back()->with('success', __('messages.flash.return_success'));
     }
 
     public function returnAll(Request $request, Borrowing $borrowing)
@@ -207,7 +207,7 @@ class BorrowingController extends Controller
         $this->authorizeBorrowing($request, $borrowing);
 
         if (in_array($borrowing->status, [Borrowing::STATUS_RETURNED, Borrowing::STATUS_LOST], true)) {
-            return back()->with('error', 'Borrowing already closed');
+            return back()->with('error', __('messages.flash.borrowing_closed'));
         }
 
         DB::transaction(function () use ($borrowing): void {
@@ -215,7 +215,7 @@ class BorrowingController extends Controller
 
             if (in_array($borrowing->status, [Borrowing::STATUS_RETURNED, Borrowing::STATUS_LOST], true)) {
                 throw ValidationException::withMessages([
-                    'quantity' => 'Borrowing already closed',
+                    'quantity' => __('messages.flash.borrowing_closed'),
                 ]);
             }
 
@@ -223,7 +223,7 @@ class BorrowingController extends Controller
 
             if ($remaining <= 0) {
                 throw ValidationException::withMessages([
-                    'quantity' => 'Borrowing already closed',
+                    'quantity' => __('messages.flash.borrowing_closed'),
                 ]);
             }
 
@@ -243,7 +243,7 @@ class BorrowingController extends Controller
 
         Mail::to($borrowing->user->email)->send(new ReturnNotification($borrowing));
 
-        return back()->with('success', 'Book returned. Email notification sent.');
+        return back()->with('success', __('messages.flash.return_success'));
     }
 
     public function markLost(Request $request, Borrowing $borrowing)
@@ -251,7 +251,7 @@ class BorrowingController extends Controller
         $this->authorizeBorrowing($request, $borrowing);
 
         if (in_array($borrowing->status, [Borrowing::STATUS_RETURNED, Borrowing::STATUS_LOST], true)) {
-            return back()->with('error', 'Borrowing already closed');
+            return back()->with('error', __('messages.flash.borrowing_closed'));
         }
 
         $borrowing->update([
@@ -260,7 +260,7 @@ class BorrowingController extends Controller
             'fine' => $borrowing->calculateFine(now()),
         ]);
 
-        return back()->with('success', 'Book marked as lost');
+        return back()->with('success', __('messages.flash.lost_success'));
     }
 
     private function authorizeBorrowing(Request $request, Borrowing $borrowing): void

@@ -15,6 +15,8 @@ use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\Member\CatalogController;
 use App\Http\Controllers\Member\DashboardController as MemberDashboardController;
 use App\Http\Controllers\Member\HistoryController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -27,6 +29,19 @@ Route::get('/', function () {
         ? redirect()->route('dashboard')
         : redirect()->route('login');
 });
+
+Route::post('/change-language', function (Request $request) {
+    $locale = $request->locale;
+
+    if (! in_array($locale, ['id', 'en'], true)) {
+        abort(400);
+    }
+
+    session(['locale' => $locale]);
+    App::setLocale($locale);
+
+    return back();
+})->name('change.language');
 
 /*
 |--------------------------------------------------------------------------

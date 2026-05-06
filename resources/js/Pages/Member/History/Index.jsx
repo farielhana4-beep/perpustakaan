@@ -13,7 +13,8 @@ const defaultFilters = {
 }
 
 export default function Index({ borrowings, settings, filters, statusOptions }) {
-  const { flash = {} } = usePage().props
+  const page = usePage()
+  const { flash = {}, t = {}, locale = 'id' } = page.props
   const currency = settings?.currency ?? 'IDR'
   const [returningBorrowing, setReturningBorrowing] = useState(null)
   const [returnQuantity, setReturnQuantity] = useState(1)
@@ -35,9 +36,7 @@ export default function Index({ borrowings, settings, filters, statusOptions }) 
   }
 
   const submitPartialReturn = () => {
-    if (!returningBorrowing) {
-      return
-    }
+    if (!returningBorrowing) return
 
     router.post(
       `/member/borrowings/${returningBorrowing.id}/return`,
@@ -50,16 +49,14 @@ export default function Index({ borrowings, settings, filters, statusOptions }) 
   }
 
   const submitReturnAll = () => {
-    if (!returningBorrowing) {
-      return
-    }
+    if (!returningBorrowing) return
 
     router.post(`/member/borrowings/${returningBorrowing.id}/return-all`, {}, { preserveScroll: true, onSuccess: closeReturnModal })
   }
 
   return (
     <MemberLayout>
-      <Head title="Borrowing History" />
+      <Head title={t?.nav?.history} />
       <div className="mx-auto max-w-7xl space-y-6">
         <FlashBanner tone="success" message={flash.success} />
         <FlashBanner tone="error" message={flash.error} />
@@ -67,12 +64,12 @@ export default function Index({ borrowings, settings, filters, statusOptions }) 
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-600">History</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-600">{t?.nav?.history}</p>
               <div className="mt-2 flex flex-wrap items-center gap-3">
-                <h1 className="text-3xl font-bold text-slate-900">Borrowing History</h1>
-                {isLoading && <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Updating...</span>}
+                <h1 className="text-3xl font-bold text-slate-900">{t?.member?.history}</h1>
+                {isLoading && <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">{t?.common?.updating}</span>}
               </div>
-              <p className="mt-2 text-sm text-slate-600">Review borrowed books, returned dates, overdue status, and fine totals.</p>
+              <p className="mt-2 text-sm text-slate-600">{t?.dashboard?.live_circulation}</p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
@@ -83,19 +80,11 @@ export default function Index({ borrowings, settings, filters, statusOptions }) 
                   </option>
                 ))}
               </select>
-              <button
-                type="button"
-                onClick={() => applyFilters()}
-                className="rounded-xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600"
-              >
-                Apply
+              <button type="button" onClick={() => applyFilters()} className="rounded-xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600">
+                {t?.buttons?.apply}
               </button>
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-              >
-                Reset
+              <button type="button" onClick={resetFilters} className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                {t?.buttons?.reset}
               </button>
             </div>
           </div>
@@ -104,30 +93,30 @@ export default function Index({ borrowings, settings, filters, statusOptions }) 
         {isLoading && borrowings.data.length === 0 ? (
           <TableSkeleton rows={6} columns={10} />
         ) : borrowings.data.length === 0 ? (
-          <EmptyState title="No borrowing history yet" description="Borrowings will appear here once you start using the catalog." />
+          <EmptyState title={t?.dashboard?.no_borrowing_data} description={t?.dashboard?.no_borrowing_activity} />
         ) : (
           <>
             <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
               <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-6 py-4 text-sm text-slate-500">
                 <p>
-                  Showing <span className="font-semibold text-slate-700">{borrowings.from}</span> to{' '}
-                  <span className="font-semibold text-slate-700">{borrowings.to}</span> of{' '}
-                  <span className="font-semibold text-slate-700">{borrowings.total}</span> history items
+                  {t?.books?.showing} <span className="font-semibold text-slate-700">{borrowings.from}</span> {t?.books?.from}{' '}
+                  <span className="font-semibold text-slate-700">{borrowings.to}</span> {t?.books?.to}{' '}
+                  <span className="font-semibold text-slate-700">{borrowings.total}</span> {t?.circulation?.records_summary}
                 </p>
               </div>
               <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-50">
                   <tr>
-                    <Th>Book</Th>
-                    <Th>Qty</Th>
-                    <Th>Returned Qty</Th>
-                    <Th>Remaining</Th>
-                    <Th>Status</Th>
-                    <Th>Borrowed</Th>
-                    <Th>Due</Th>
-                    <Th>Returned At</Th>
-                    <Th>Fine</Th>
-                    <Th align="right">Action</Th>
+                    <Th>{t?.table?.book}</Th>
+                    <Th>{t?.table?.qty}</Th>
+                    <Th>{t?.circulation?.returned_qty}</Th>
+                    <Th>{t?.circulation?.remaining}</Th>
+                    <Th>{t?.table?.status}</Th>
+                    <Th>{t?.circulation?.borrowed}</Th>
+                    <Th>{t?.circulation?.due}</Th>
+                    <Th>{t?.circulation?.returned_at}</Th>
+                    <Th>{t?.circulation?.fine}</Th>
+                    <Th align="right">{t?.table?.actions}</Th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -140,29 +129,21 @@ export default function Index({ borrowings, settings, filters, statusOptions }) 
                       <Td>
                         <div className="flex items-center gap-2">
                           <StatusBadge status={item.status} />
-                          {item.status === 'overdue' && <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-600">Warning</span>}
+                          {item.status === 'overdue' && <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-600">{t?.dashboard?.warning}</span>}
                         </div>
                       </Td>
-                      <Td>{formatDate(item.borrowed_at)}</Td>
-                      <Td>{formatDate(item.due_date)}</Td>
-                      <Td>{item.returned_at ? formatDate(item.returned_at) : '-'}</Td>
+                      <Td>{formatDate(item.borrowed_at, locale)}</Td>
+                      <Td>{formatDate(item.due_date, locale)}</Td>
+                      <Td>{item.returned_at ? formatDate(item.returned_at, locale) : '-'}</Td>
                       <Td>{formatCurrency(item.fine_amount, currency)}</Td>
                       <Td align="right">
                         {(item.status === 'borrowed' || item.status === 'overdue') && (
                           <div className="flex flex-wrap justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => openReturnModal(item)}
-                              className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
-                            >
-                              Return Some
+                            <button type="button" onClick={() => openReturnModal(item)} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700">
+                              {t?.actions?.return_some}
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => router.post(`/member/borrowings/${item.id}/return-all`, {}, { preserveScroll: true })}
-                              className="rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600"
-                            >
-                              Return All
+                            <button type="button" onClick={() => router.post(`/member/borrowings/${item.id}/return-all`, {}, { preserveScroll: true })} className="rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600">
+                              {t?.actions?.return_all}
                             </button>
                           </div>
                         )}
@@ -204,11 +185,7 @@ function FlashBanner({ tone, message }) {
 function Th({ children, align = 'left' }) {
   const alignClass = align === 'right' ? 'text-right' : 'text-left'
 
-  return (
-    <th className={`px-6 py-4 ${alignClass} text-xs font-semibold uppercase tracking-[0.2em] text-slate-500`}>
-      {children}
-    </th>
-  )
+  return <th className={`px-6 py-4 ${alignClass} text-xs font-semibold uppercase tracking-[0.2em] text-slate-500`}>{children}</th>
 }
 
 function Td({ children, align = 'left' }) {
@@ -217,10 +194,10 @@ function Td({ children, align = 'left' }) {
   return <td className={`px-6 py-4 ${alignClass} text-sm text-slate-700`}>{children}</td>
 }
 
-function formatDate(value) {
+function formatDate(value, locale) {
   if (!value) return '-'
 
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(locale === 'id' ? 'id-ID' : 'en-US', {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value))

@@ -11,7 +11,8 @@ const defaultFilters = {
 }
 
 export default function Index(props) {
-  const { flash = {} } = usePage().props
+  const page = usePage()
+  const { flash = {}, t = {} } = page.props
   const { categories = { data: [] }, filters = {} } = props ?? {}
   const safeCategories = categories ?? { data: [], links: [] }
   const categoriesData = safeCategories?.data ?? []
@@ -21,36 +22,31 @@ export default function Index(props) {
     defaults: defaultFilters,
     filters,
   })
-  console.log('DATA:', safeCategories)
-
-  if (!safeCategories || !safeCategories.data) {
-    return <div>Loading...</div>
-  }
 
   const handleDelete = (category) => {
-    if (!window.confirm(`Delete "${category.name}"?`)) return
+    if (!window.confirm(`${t?.buttons?.delete} "${category.name}"?`)) return
     router.delete(`/admin/categories/${category.id}`)
   }
 
   return (
     <AdminLayout>
-      <Head title="Categories" />
+      <Head title={t?.categories?.title} />
 
       <div className="mx-auto max-w-7xl">
         {flash.success && <Alert>{flash.success}</Alert>}
 
         <div className="mb-6 flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">Library</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">{t?.common?.library_system}</p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
-              <h1 className="text-3xl font-bold text-slate-900">Categories</h1>
-              {isLoading && <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">Updating...</span>}
+              <h1 className="text-3xl font-bold text-slate-900">{t?.categories?.title}</h1>
+              {isLoading && <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">{t?.common?.updating}</span>}
             </div>
-            <p className="mt-2 text-sm text-slate-600">Organize your catalog into clean, searchable groups.</p>
+            <p className="mt-2 text-sm text-slate-600">{t?.categories?.organize}</p>
           </div>
 
           <Link href="/admin/categories/create" className="btn-primary">
-            Add Category
+            {t?.categories?.add_button}
           </Link>
         </div>
 
@@ -58,16 +54,16 @@ export default function Index(props) {
           actions={
             <>
               <button type="button" onClick={() => applyFilters()} className="btn-apply">
-                Apply
+                {t?.buttons?.apply}
               </button>
               <button type="button" onClick={resetFilters} className="btn-reset">
-                Reset
+                {t?.buttons?.reset}
               </button>
             </>
           }
         >
           <input
-            placeholder="Search category..."
+            placeholder={t?.categories?.search_category}
             value={data.search}
             onChange={(e) => setData('search', e.target.value)}
             className="w-72 rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
@@ -78,8 +74,8 @@ export default function Index(props) {
             onChange={(e) => setData('sort', e.target.value)}
             className="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
           >
-            <option value="latest">Latest</option>
-            <option value="oldest">Oldest</option>
+            <option value="latest">{t?.books?.latest}</option>
+            <option value="oldest">{t?.books?.oldest}</option>
           </select>
         </FilterToolbar>
 
@@ -87,27 +83,27 @@ export default function Index(props) {
           <TableSkeleton rows={6} columns={4} />
         ) : categoriesData?.length === 0 ? (
           <>
-            <EmptyState title="No categories found" description="Try a different keyword or reset the filters." />
-            <div className="py-10 text-center text-gray-400">No data found</div>
+            <EmptyState title={t?.categories?.no_categories_found} description={t?.categories?.try_keyword} />
+            <div className="py-10 text-center text-gray-400">{t?.empty?.no_data}</div>
           </>
         ) : (
           <>
             <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
               <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-6 py-4 text-sm text-slate-500">
                 <p>
-                  Showing <span className="font-semibold text-slate-700">{safeCategories.from ?? 0}</span> to{' '}
-                  <span className="font-semibold text-slate-700">{safeCategories.to ?? 0}</span> of{' '}
-                  <span className="font-semibold text-slate-700">{safeCategories.total ?? categoriesData.length}</span> categories
+                  {t?.books?.showing} <span className="font-semibold text-slate-700">{safeCategories.from ?? 0}</span> {t?.books?.from}{' '}
+                  <span className="font-semibold text-slate-700">{safeCategories.to ?? 0}</span> {t?.books?.to}{' '}
+                  <span className="font-semibold text-slate-700">{safeCategories.total ?? categoriesData.length}</span> {t?.categories?.title?.toLowerCase?.()}
                 </p>
               </div>
 
               <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-50">
                   <tr>
-                    <Th>Name</Th>
-                    <Th>Slug</Th>
-                    <Th>Books</Th>
-                    <Th align="right">Actions</Th>
+                    <Th>{t?.form?.name}</Th>
+                    <Th>{t?.form?.slug}</Th>
+                    <Th>{t?.categories?.books}</Th>
+                    <Th align="right">{t?.table?.actions}</Th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -121,10 +117,10 @@ export default function Index(props) {
                       <td className="px-6 py-4">
                         <div className="flex justify-end gap-2">
                           <Link href={`/admin/categories/${category.id}/edit`} className="btn-secondary">
-                            Edit
+                            {t?.buttons?.edit}
                           </Link>
                           <button type="button" onClick={() => handleDelete(category)} className="btn-danger">
-                            Delete
+                            {t?.buttons?.delete}
                           </button>
                         </div>
                       </td>
@@ -145,11 +141,7 @@ export default function Index(props) {
 }
 
 function Alert({ children }) {
-  return (
-    <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
-      {children}
-    </div>
-  )
+  return <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{children}</div>
 }
 
 function Th({ children, align = 'left' }) {
@@ -164,15 +156,10 @@ function Td({ children }) {
 function HighlightedText({ text, search }) {
   const safeText = text ?? ''
 
-  if (!search) {
-    return safeText
-  }
+  if (!search) return safeText
 
   const index = safeText.toLowerCase().indexOf(search.toLowerCase())
-
-  if (index === -1) {
-    return safeText
-  }
+  if (index === -1) return safeText
 
   return (
     <>

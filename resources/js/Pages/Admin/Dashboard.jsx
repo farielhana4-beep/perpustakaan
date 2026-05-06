@@ -22,35 +22,34 @@ function StatCard({ label, value, hint, tone = 'sky' }) {
 }
 
 export default function Dashboard({ stats, recentBorrowings, dailyBorrowings, topBooks, lowStockBooks, settings }) {
-  const { props } = usePage()
+  const page = usePage()
+  const { t = {}, locale = 'id', auth = {} } = page.props
   const currency = settings?.currency ?? 'IDR'
-  const isSuperAdmin = props.auth?.user?.role === 'super_admin'
+  const isSuperAdmin = auth?.user?.role === 'super_admin'
 
   return (
     <AdminLayout>
-      <Head title="Admin Dashboard" />
+      <Head title={t?.dashboard?.title} />
 
       <div className="mx-auto max-w-7xl space-y-6">
         <section className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">Dashboard</p>
-              <h1 className="mt-3 text-3xl font-bold text-slate-900">Smart Library Overview</h1>
-              <p className="mt-3 max-w-3xl text-slate-600">
-                Track live borrowing activity, overdue pressure, low stock alerts, and fine accumulation from one place.
-              </p>
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">{t?.nav?.dashboard}</p>
+              <h1 className="mt-3 text-3xl font-bold text-slate-900">{t?.dashboard?.overview}</h1>
+              <p className="mt-3 max-w-3xl text-slate-600">{t?.dashboard?.track_activity}</p>
             </div>
 
             {isSuperAdmin && (
               <div className="flex flex-wrap justify-end gap-2">
                 <a href="/admin/exports?dataset=books&format=csv" className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
-                  Export Books CSV
+                  {t?.books?.title} CSV
                 </a>
                 <a href="/admin/exports?dataset=users&format=xls" className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
-                  Export Users Excel
+                  {t?.users?.title} Excel
                 </a>
                 <a href="/admin/exports?dataset=borrowings&format=csv" className="rounded-xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700">
-                  Export Borrowings
+                  {t?.dashboard?.recent_borrowings}
                 </a>
               </div>
             )}
@@ -58,21 +57,21 @@ export default function Dashboard({ stats, recentBorrowings, dailyBorrowings, to
         </section>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <StatCard label="Total Books" value={stats.total_books} hint="Catalog titles available now" tone="sky" />
-          <StatCard label="Total Users" value={stats.total_users} hint="All registered library accounts" tone="sky" />
-          <StatCard label="Active Borrowed" value={stats.total_borrowed} hint="Books currently out" tone="emerald" />
-          <StatCard label="Overdue" value={stats.total_overdue} hint="Items needing follow up" tone="red" />
-          <StatCard label="Total Fine" value={formatCurrency(stats.total_fine, currency)} hint="Accumulated fine value" tone="red" />
+          <StatCard label={t?.dashboard?.total_books} value={stats.total_books} hint={t?.dashboard?.catalog_titles_available} tone="sky" />
+          <StatCard label={t?.dashboard?.total_users} value={stats.total_users} hint={t?.dashboard?.registered_accounts} tone="sky" />
+          <StatCard label={t?.dashboard?.active_borrowed} value={stats.total_borrowed} hint={t?.dashboard?.books_currently_out} tone="emerald" />
+          <StatCard label={t?.dashboard?.overdue} value={stats.total_overdue} hint={t?.dashboard?.items_needing_follow_up} tone="red" />
+          <StatCard label={t?.dashboard?.total_fine} value={formatCurrency(stats.total_fine, currency)} hint={t?.dashboard?.accumulated_fine} tone="red" />
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">Trend</p>
-                <h2 className="mt-2 text-xl font-bold text-slate-900">Daily Borrowings</h2>
+                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">{t?.dashboard?.trend}</p>
+                <h2 className="mt-2 text-xl font-bold text-slate-900">{t?.dashboard?.daily_borrowings}</h2>
               </div>
-              <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">Last 14 days</span>
+              <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">{t?.dashboard?.last_14_days}</span>
             </div>
             <div className="mt-6">
               <AdminBorrowingChart data={dailyBorrowings} />
@@ -82,17 +81,17 @@ export default function Dashboard({ stats, recentBorrowings, dailyBorrowings, to
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-600">Popular</p>
-                <h2 className="mt-2 text-xl font-bold text-slate-900">Most Borrowed Books</h2>
+                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-600">{t?.dashboard?.popular}</p>
+                <h2 className="mt-2 text-xl font-bold text-slate-900">{t?.dashboard?.most_borrowed_books}</h2>
               </div>
               <Link href="/admin/books" className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-                Open Books
+                {t?.books?.title}
               </Link>
             </div>
 
             <div className="mt-5 space-y-3">
               {topBooks.length === 0 ? (
-                <EmptyState title="No borrowing data yet" description="Borrowing activity will appear here once circulation starts." />
+                <EmptyState title={t?.dashboard?.no_borrowing_data} description={t?.dashboard?.no_borrowing_activity} />
               ) : (
                 topBooks.map((book, index) => (
                   <div key={book.id} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
@@ -106,8 +105,10 @@ export default function Dashboard({ stats, recentBorrowings, dailyBorrowings, to
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-semibold text-slate-900">{book.total_borrowed ?? 0} borrowed</p>
-                      {book.stock < 5 && <span className="mt-1 inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-600">Low Stock</span>}
+                      <p className="text-sm font-semibold text-slate-900">
+                        {book.total_borrowed ?? 0} {t?.dashboard?.borrowed}
+                      </p>
+                      {book.stock < 5 && <span className="mt-1 inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-600">{t?.dashboard?.low_stock}</span>}
                     </div>
                   </div>
                 ))
@@ -120,17 +121,17 @@ export default function Dashboard({ stats, recentBorrowings, dailyBorrowings, to
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-red-600">Attention</p>
-                <h2 className="mt-2 text-xl font-bold text-slate-900">Low Stock Alert</h2>
+                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-red-600">{t?.dashboard?.attention}</p>
+                <h2 className="mt-2 text-xl font-bold text-slate-900">{t?.dashboard?.low_stock_alert}</h2>
               </div>
               <Link href="/admin/books?stock=low_stock" className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-                Low Stock Books
+                {t?.dashboard?.low_stock}
               </Link>
             </div>
 
             <div className="mt-5 space-y-3">
               {lowStockBooks.length === 0 ? (
-                <EmptyState title="Stock is healthy" description="No books are currently below the low-stock threshold." />
+                <EmptyState title={t?.dashboard?.stock_safe} description={t?.dashboard?.books_need_restock} />
               ) : (
                 lowStockBooks.map((book) => (
                   <div key={book.id} className="rounded-2xl border border-red-100 bg-red-50 px-4 py-4">
@@ -140,8 +141,10 @@ export default function Dashboard({ stats, recentBorrowings, dailyBorrowings, to
                         <p className="text-sm text-slate-500">{book.author}</p>
                       </div>
                       <div className="text-right">
-                        <span className="inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-600">Low Stock</span>
-                        <p className="mt-2 text-sm font-semibold text-red-700">{book.stock} left</p>
+                        <span className="inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-600">{t?.dashboard?.low_stock}</span>
+                        <p className="mt-2 text-sm font-semibold text-red-700">
+                          {book.stock} {t?.dashboard?.left}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -153,33 +156,30 @@ export default function Dashboard({ stats, recentBorrowings, dailyBorrowings, to
           <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="flex items-center justify-between border-b border-slate-200 p-6">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Recent Borrowings</h2>
-                <p className="mt-1 text-sm text-slate-500">Live circulation activity with overdue visibility and fine totals.</p>
+                <h2 className="text-lg font-semibold text-slate-900">{t?.dashboard?.latest_borrowings}</h2>
+                <p className="mt-1 text-sm text-slate-500">{t?.dashboard?.live_circulation}</p>
               </div>
-              <Link
-                href="/admin/circulation?status=overdue"
-                className="rounded-xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100"
-              >
-                Overdue Only
+              <Link href="/admin/circulation?status=overdue" className="rounded-xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100">
+                {t?.dashboard?.overdue_only}
               </Link>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-50">
                   <tr>
-                    <Th>User</Th>
-                    <Th>Book</Th>
-                    <Th>Status</Th>
-                    <Th>Borrowed</Th>
-                    <Th>Due</Th>
-                    <Th>Fine</Th>
+                    <Th>{t?.table?.user}</Th>
+                    <Th>{t?.table?.book}</Th>
+                    <Th>{t?.table?.borrowed_at}</Th>
+                    <Th>{t?.table?.due_date}</Th>
+                    <Th>{t?.table?.returned_at}</Th>
+                    <Th>{t?.table?.fine}</Th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {recentBorrowings.length === 0 ? (
                     <tr>
                       <td colSpan="6" className="px-6 py-12 text-center text-sm text-slate-500">
-                        No borrowing activity yet.
+                        {t?.dashboard?.no_borrowing_activity}
                       </td>
                     </tr>
                   ) : (
@@ -190,11 +190,11 @@ export default function Dashboard({ stats, recentBorrowings, dailyBorrowings, to
                         <Td>
                           <div className="flex flex-wrap items-center gap-2">
                             <StatusBadge status={item.status} />
-                            {item.status === 'overdue' && <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-600">Warning</span>}
+                            {item.status === 'overdue' && <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-600">{t?.dashboard?.warning}</span>}
                           </div>
                         </Td>
-                        <Td>{formatDate(item.borrowed_at)}</Td>
-                        <Td>{formatDate(item.due_date)}</Td>
+                        <Td>{formatDate(item.borrowed_at, locale)}</Td>
+                        <Td>{formatDate(item.due_date, locale)}</Td>
                         <Td>{formatCurrency(item.fine_amount, currency)}</Td>
                       </tr>
                     ))
@@ -217,10 +217,10 @@ function Td({ children, className = '' }) {
   return <td className={`px-6 py-4 text-sm text-slate-600 ${className}`}>{children}</td>
 }
 
-function formatDate(value) {
+function formatDate(value, locale) {
   if (!value) return '-'
 
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(locale === 'id' ? 'id-ID' : 'en-US', {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value))

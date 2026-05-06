@@ -1,8 +1,15 @@
-export function EmptyState({ title = 'No data found', description = 'Try adjusting your search or filters.' }) {
+import { usePage } from '@inertiajs/react'
+
+export function EmptyState({ title, description }) {
+  const page = usePage()
+  const { t = {} } = page.props
+  const safeTitle = title || t?.empty?.no_data
+  const safeDescription = description || t?.empty?.no_results
+
   return (
     <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
-      <p className="text-base font-semibold text-slate-900">{title}</p>
-      <p className="mt-2 text-sm text-slate-500">{description}</p>
+      <p className="text-base font-semibold text-slate-900">{safeTitle}</p>
+      <p className="mt-2 text-sm text-slate-500">{safeDescription}</p>
     </div>
   )
 }
