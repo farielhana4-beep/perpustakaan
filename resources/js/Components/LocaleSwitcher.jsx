@@ -3,6 +3,19 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 const FALLBACK_LOCALES = ['id', 'en']
 
+const LANGUAGE_MAP = {
+  id: {
+    native: 'Bahasa Indonesia',
+    translated: 'Indonesian',
+    flag: '🇮🇩',
+  },
+  en: {
+    native: 'English',
+    translated: 'English',
+    flag: '🇺🇸',
+  },
+}
+
 function normalizeLocale(value) {
   return typeof value === 'string'
     ? value
@@ -11,30 +24,23 @@ function normalizeLocale(value) {
       : 'id'
 }
 
-function buildLabel(locale, t) {
-  if (locale === 'id') {
-    return t?.locale?.indonesian ?? 'Bahasa Indonesia'
+function buildOption(locale, currentLocale) {
+  const normalizedLocale = normalizeLocale(locale)
+  const language = LANGUAGE_MAP[normalizedLocale] ?? {
+    native: normalizedLocale.toUpperCase(),
+    translated: normalizedLocale.toUpperCase(),
+    flag: '🌐',
   }
-
-  if (locale === 'en') {
-    return t?.locale?.english ?? 'Bahasa Inggris'
-  }
-
-  return locale.toUpperCase()
-}
-
-function buildOption(value, t) {
-  const locale = normalizeLocale(value)
 
   return {
-    value: locale,
-    label: buildLabel(locale, t),
-    icon: locale === 'id' ? '🇮🇩' : locale === 'en' ? '🇺🇸' : '🌐',
+    value: normalizedLocale,
+    label: normalizedLocale === currentLocale ? language.native : language.translated,
+    flag: language.flag,
   }
 }
 
 export default function LocaleSwitcher({ className = '' }) {
-  const { locale: localeValue = 'id', app = {}, t = {}, locales: localesValue = FALLBACK_LOCALES } = usePage().props
+  const { locale: localeValue = 'id', app = {}, locales: localesValue = FALLBACK_LOCALES } = usePage().props
   const normalizedLocale = normalizeLocale(app?.locale ?? localeValue)
   const [open, setOpen] = useState(false)
   const menuRef = useRef(null)
@@ -43,27 +49,11 @@ export default function LocaleSwitcher({ className = '' }) {
     const source = Array.isArray(localesValue) && localesValue.length > 0 ? localesValue : FALLBACK_LOCALES
 
     return source
-      .map((value) => {
-        if (typeof value === 'string') {
-          return buildOption(value, t)
-        }
+      .map((value) => buildOption(value, normalizedLocale))
+      .filter((option) => option && typeof option.value === 'string')
+  }, [localesValue, normalizedLocale])
 
-        if (typeof value === 'object' && value !== null) {
-          const locale = normalizeLocale(value)
-
-          return {
-            value: locale,
-            label: buildLabel(locale, t),
-            icon: locale === 'id' ? '🇮🇩' : locale === 'en' ? '🇺🇸' : '🌐',
-          }
-        }
-
-        return buildOption(value, t)
-      })
-      .filter(Boolean)
-  }, [localesValue, t?.locale?.english, t?.locale?.indonesian])
-
-  const currentOption = localeOptions.find((option) => option.value === normalizedLocale) ?? buildOption(normalizedLocale, t)
+  const currentOption = localeOptions.find((option) => option.value === normalizedLocale) ?? buildOption(normalizedLocale, normalizedLocale)
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -120,11 +110,11 @@ export default function LocaleSwitcher({ className = '' }) {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        aria-label={t?.profile?.language ?? 'Language'}
+        aria-label="Language"
         className="flex w-full items-center justify-between gap-3 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-md"
       >
         <span className="flex items-center gap-2">
-          <span className="text-base leading-none">{currentOption.icon}</span>
+          <span className="text-base leading-none">{currentOption.flag}</span>
           <span className="hidden sm:inline">{currentOption.label}</span>
           <span className="sm:hidden">{normalizedLocale.toUpperCase()}</span>
         </span>
@@ -150,7 +140,7 @@ export default function LocaleSwitcher({ className = '' }) {
               option.value === normalizedLocale ? 'bg-sky-50 text-sky-700' : 'text-slate-700',
             ].join(' ')}
           >
-            <span className="text-base leading-none">{option.icon}</span>
+            <span className="text-base leading-none">{option.flag}</span>
             <span>{option.label}</span>
           </button>
         ))}
