@@ -1,6 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react'
 import { useEffect, useRef, useState } from 'react'
-import LocaleSwitcher from './LocaleSwitcher'
 
 export default function ProfileMenu({ settingsHref }) {
   const { auth = {}, t = {} } = usePage().props
@@ -57,13 +56,6 @@ export default function ProfileMenu({ settingsHref }) {
               {t?.profile?.settings}
             </MenuLink>
           )}
-        </div>
-
-        <div className="border-t border-slate-100 px-3 py-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">{t?.profile?.language}</p>
-          <div className="mt-2">
-            <LocaleSwitcher className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100" />
-          </div>
         </div>
 
         <div className="border-t border-slate-100 px-1 pt-3">

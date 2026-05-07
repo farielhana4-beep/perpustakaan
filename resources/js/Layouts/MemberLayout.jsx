@@ -5,6 +5,7 @@ import FlashAlert from '../Components/FlashAlert'
 import GlobalSearchBar from '../Components/GlobalSearchBar'
 import NotificationBell from '../Components/NotificationBell'
 import ProfileMenu from '../Components/ProfileMenu'
+import LocaleSwitcher from '../Components/LocaleSwitcher'
 
 function NavItem({ href, active, children }) {
   return (
@@ -74,6 +75,7 @@ export default function MemberLayout({ children }) {
               <GlobalSearchBar role={user?.role} />
 
               <div className="flex items-center justify-end gap-3">
+                <LocaleSwitcher className="min-w-[9.5rem]" />
                 <NotificationBell notifications={notifications} />
                 <ProfileMenu settingsHref="/profile" />
               </div>
