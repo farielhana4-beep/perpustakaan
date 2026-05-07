@@ -31,7 +31,7 @@ Route::get('/', function () {
 });
 
 Route::post('/locale', function (Request $request) {
-    $locale = $request->locale;
+    $locale = $request->input('locale');
     $supportedLocales = config('app.supported_locales', ['id', 'en']);
 
     if (! in_array($locale, $supportedLocales, true)) {
@@ -39,12 +39,13 @@ Route::post('/locale', function (Request $request) {
     }
 
     session(['locale' => $locale]);
+    app()->setLocale($locale);
 
     return back();
 })->name('locale');
 
 Route::post('/change-language', function (Request $request) {
-    $locale = $request->locale;
+    $locale = $request->input('locale');
     $supportedLocales = config('app.supported_locales', ['id', 'en']);
 
     if (! in_array($locale, $supportedLocales, true)) {
@@ -52,6 +53,7 @@ Route::post('/change-language', function (Request $request) {
     }
 
     session(['locale' => $locale]);
+    app()->setLocale($locale);
 
     return back();
 })->name('change.language');

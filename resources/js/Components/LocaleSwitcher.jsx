@@ -3,11 +3,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 const FALLBACK_LOCALES = ['id', 'en']
 
-const LOCALE_META = {
-  id: { label: 'Indonesia', icon: '🇮🇩' },
-  en: { label: 'English', icon: '🇺🇸' },
-}
-
 function normalizeLocale(value) {
   return typeof value === 'string'
     ? value
@@ -16,48 +11,59 @@ function normalizeLocale(value) {
       : 'id'
 }
 
-function normalizeLocaleOption(value) {
-  const normalizedLocale = normalizeLocale(value)
-  const meta = LOCALE_META[normalizedLocale] ?? {}
+function buildLabel(locale, t) {
+  if (locale === 'id') {
+    return t?.locale?.indonesian ?? 'Bahasa Indonesia'
+  }
+
+  if (locale === 'en') {
+    return t?.locale?.english ?? 'Bahasa Inggris'
+  }
+
+  return locale.toUpperCase()
+}
+
+function buildOption(value, t) {
+  const locale = normalizeLocale(value)
 
   return {
-    value: normalizedLocale,
-    label: typeof meta.label === 'string' ? meta.label : normalizedLocale.toUpperCase(),
-    icon: typeof meta.icon === 'string' ? meta.icon : '🌐',
+    value: locale,
+    label: buildLabel(locale, t),
+    icon: locale === 'id' ? '🇮🇩' : locale === 'en' ? '🇺🇸' : '🌐',
   }
 }
 
 export default function LocaleSwitcher({ className = '' }) {
-  const { locale: localeValue = 'id', t = {}, locales: localesValue = FALLBACK_LOCALES } = usePage().props
-  const normalizedLocale = normalizeLocale(localeValue)
+  const { locale: localeValue = 'id', app = {}, t = {}, locales: localesValue = FALLBACK_LOCALES } = usePage().props
+  const normalizedLocale = normalizeLocale(app?.locale ?? localeValue)
   const [open, setOpen] = useState(false)
   const menuRef = useRef(null)
+
   const localeOptions = useMemo(() => {
-    if (!Array.isArray(localesValue) || localesValue.length === 0) {
-      return FALLBACK_LOCALES.map((value) => normalizeLocaleOption(value))
-    }
+    const source = Array.isArray(localesValue) && localesValue.length > 0 ? localesValue : FALLBACK_LOCALES
 
-    return localesValue.map((value) => {
-      if (typeof value === 'string') {
-        return normalizeLocaleOption(value)
-      }
-
-      if (typeof value === 'object' && value !== null) {
-        const optionValue = normalizeLocale(value)
-        const optionLabel = typeof value.label === 'string'
-          ? value.label
-          : optionValue.toUpperCase()
-
-        return {
-          value: optionValue,
-          label: optionLabel,
+    return source
+      .map((value) => {
+        if (typeof value === 'string') {
+          return buildOption(value, t)
         }
-      }
 
-      return normalizeLocaleOption(value)
-    })
-  }, [localesValue])
-  const currentOption = localeOptions.find((option) => option.value === normalizedLocale) ?? normalizeLocaleOption(normalizedLocale)
+        if (typeof value === 'object' && value !== null) {
+          const locale = normalizeLocale(value)
+
+          return {
+            value: locale,
+            label: buildLabel(locale, t),
+            icon: locale === 'id' ? '🇮🇩' : locale === 'en' ? '🇺🇸' : '🌐',
+          }
+        }
+
+        return buildOption(value, t)
+      })
+      .filter(Boolean)
+  }, [localesValue, t?.locale?.english, t?.locale?.indonesian])
+
+  const currentOption = localeOptions.find((option) => option.value === normalizedLocale) ?? buildOption(normalizedLocale, t)
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -102,11 +108,11 @@ export default function LocaleSwitcher({ className = '' }) {
     router.post(
       '/locale',
       { locale: nextLocale },
-        {
-          preserveScroll: true,
-          preserveState: false,
-        },
-      )
+      {
+        preserveScroll: true,
+        preserveState: false,
+      },
+    )
   }
 
   return (
@@ -127,7 +133,7 @@ export default function LocaleSwitcher({ className = '' }) {
 
       <div
         className={[
-          'absolute right-0 z-40 mt-2 w-44 origin-top-right overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.12)] transition-all duration-200',
+          'absolute right-0 z-40 mt-2 w-56 origin-top-right overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.12)] transition-all duration-200',
           open ? 'pointer-events-auto scale-100 opacity-100' : 'pointer-events-none scale-95 opacity-0',
         ].join(' ')}
       >

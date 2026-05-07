@@ -10,8 +10,8 @@ function normalizeLocale(value) {
 }
 
 export default function BrandSync() {
-  const { settings = {}, t = {}, locale: localeValue = 'id' } = usePage().props
-  const normalizedLocale = normalizeLocale(localeValue)
+  const { settings = {}, t = {}, app = {}, locale: localeValue = 'id' } = usePage().props
+  const normalizedLocale = normalizeLocale(app?.locale ?? localeValue)
 
   useEffect(() => {
     const title = settings?.library_name || t?.common?.library_system || document.title
