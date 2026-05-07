@@ -1,8 +1,17 @@
 import { usePage } from '@inertiajs/react'
 import { useEffect } from 'react'
 
+function normalizeLocale(value) {
+  return typeof value === 'string'
+    ? value
+    : typeof value?.code === 'string'
+      ? value.code
+      : 'id'
+}
+
 export default function BrandSync() {
-  const { settings = {}, t = {}, locale = 'id' } = usePage().props
+  const { settings = {}, t = {}, locale: localeValue = 'id' } = usePage().props
+  const normalizedLocale = normalizeLocale(localeValue)
 
   useEffect(() => {
     const title = settings?.library_name || t?.common?.library_system || document.title
@@ -21,8 +30,8 @@ export default function BrandSync() {
     icon.setAttribute('type', 'image/png')
     icon.setAttribute('href', settings?.library_favicon_url || '/favicon.ico')
 
-    document.documentElement.lang = locale === 'id' ? 'id' : 'en'
-  }, [settings?.library_name, settings?.library_favicon_url, t?.common?.library_system, locale])
+    document.documentElement.lang = normalizedLocale === 'id' ? 'id' : 'en'
+  }, [settings?.library_name, settings?.library_favicon_url, t?.common?.library_system, normalizedLocale])
 
   return null
 }

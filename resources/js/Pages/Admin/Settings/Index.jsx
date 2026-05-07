@@ -1,28 +1,66 @@
 import { Head, useForm, usePage } from '@inertiajs/react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import AdminLayout from '../../../Layouts/AdminLayout'
 
 const TABS = ['branding', 'borrowing_rules', 'localization']
+const FALLBACK_LOCALES = [
+  { value: 'id', label: 'ID' },
+  { value: 'en', label: 'EN' },
+]
 
 export default function Index({ settings, currencies, locales }) {
   const { t = {} } = usePage().props
   const [activeTab, setActiveTab] = useState('branding')
+  const safeSettings = settings ?? {}
+  const safeCurrencies = Array.isArray(currencies) && currencies.length > 0 ? currencies : ['IDR']
+  const safeLocales = useMemo(() => {
+    if (!Array.isArray(locales) || locales.length === 0) {
+      return FALLBACK_LOCALES
+    }
+
+    return locales
+      .map((locale) => {
+        if (typeof locale === 'string') {
+          return { value: locale, label: locale.toUpperCase() }
+        }
+
+        if (typeof locale === 'object' && locale !== null) {
+          const value = typeof locale.value === 'string'
+            ? locale.value
+            : typeof locale.code === 'string'
+              ? locale.code
+              : null
+
+          if (!value) {
+            return null
+          }
+
+          return {
+            value,
+            label: typeof locale.label === 'string' ? locale.label : value.toUpperCase(),
+          }
+        }
+
+        return null
+      })
+      .filter(Boolean)
+  }, [locales])
 
   const { data, setData, put, processing, errors } = useForm({
-    library_name: settings?.library_name ?? '',
-    default_locale: settings?.default_locale ?? 'id',
-    fine_per_day: settings?.fine_per_day ?? 1000,
-    max_borrow_days: settings?.max_borrow_days ?? 7,
-    currency: settings?.currency ?? 'IDR',
-    max_books_per_user: settings?.max_books_per_user ?? 3,
+    library_name: safeSettings?.library_name ?? '',
+    default_locale: typeof safeSettings?.default_locale === 'string' ? safeSettings.default_locale : 'id',
+    fine_per_day: safeSettings?.fine_per_day ?? 1000,
+    max_borrow_days: safeSettings?.max_borrow_days ?? 7,
+    currency: safeSettings?.currency ?? 'IDR',
+    max_books_per_user: safeSettings?.max_books_per_user ?? 3,
     library_logo: null,
     library_favicon: null,
   })
 
-  const logoPreview = useObjectUrl(data.library_logo, settings?.library_logo_url)
-  const faviconPreview = useObjectUrl(data.library_favicon, settings?.library_favicon_url)
+  const logoPreview = useObjectUrl(data.library_logo, safeSettings?.library_logo_url)
+  const faviconPreview = useObjectUrl(data.library_favicon, safeSettings?.library_favicon_url)
 
-  const brandTitle = data.library_name || settings?.library_name || t?.common?.library_system
+  const brandTitle = data.library_name || safeSettings?.library_name || t?.common?.library_system || t?.common?.library_portal || 'Library'
 
   const submit = (event) => {
     event.preventDefault()
@@ -60,8 +98,8 @@ export default function Index({ settings, currencies, locales }) {
                 </div>
 
                 <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                  <MiniStat label={t?.settings?.logo} value={settings?.library_logo ? t?.settings?.upload_logo : t?.empty?.no_data ?? '-'} />
-                  <MiniStat label={t?.settings?.favicon} value={settings?.library_favicon ? t?.settings?.upload_favicon : t?.empty?.no_data ?? '-'} />
+                  <MiniStat label={t?.settings?.logo ?? 'Logo'} value={safeSettings?.library_logo ? t?.settings?.upload_logo : t?.empty?.no_data ?? '-'} />
+                  <MiniStat label={t?.settings?.favicon ?? 'Favicon'} value={safeSettings?.library_favicon ? t?.settings?.upload_favicon : t?.empty?.no_data ?? '-'} />
                 </div>
               </div>
             </div>
@@ -137,7 +175,7 @@ export default function Index({ settings, currencies, locales }) {
               <Panel title={t?.settings?.currency} description={t?.settings?.configure_rules}>
                 <Field label={t?.form?.currency} error={errors.currency}>
                   <select className="input" value={data.currency} onChange={(event) => setData('currency', event.target.value)}>
-                    {currencies.map((currency) => (
+                    {safeCurrencies.map((currency) => (
                       <option key={currency} value={currency}>
                         {currency}
                       </option>
@@ -162,7 +200,7 @@ export default function Index({ settings, currencies, locales }) {
               <Panel title={t?.settings?.localization} description={t?.settings?.library_name_hint}>
                 <Field label={t?.settings?.default_locale} error={errors.default_locale}>
                   <select className="input" value={data.default_locale} onChange={(event) => setData('default_locale', event.target.value)}>
-                    {locales.map((locale) => (
+                    {safeLocales.map((locale) => (
                       <option key={locale.value} value={locale.value}>
                         {locale.label}
                       </option>
