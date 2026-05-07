@@ -45,6 +45,7 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'locale' => App::getLocale(),
             'locales' => config('app.supported_locales', ['id', 'en']),
+            'availableLocales' => config('app.supported_locales', ['id', 'en']),
             'app' => [
                 'locale' => App::getLocale(),
                 'availableLocales' => config('app.supported_locales', ['id', 'en']),

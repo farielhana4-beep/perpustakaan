@@ -27,8 +27,9 @@ function NavItem({ href, active, children }) {
 export default function AdminLayout({ children }) {
   const page = usePage()
   const url = page?.props?.url || ''
-  const { auth, notifications = [], t = {} } = page.props
+  const { auth, notifications = [], t = {}, locale = 'id', availableLocales = [], locales = [] } = page.props
   const user = auth?.user
+  const switcherLocales = Array.isArray(availableLocales) && availableLocales.length > 0 ? availableLocales : locales
 
   const handleLogout = () => {
     router.post('/logout')
@@ -98,7 +99,7 @@ export default function AdminLayout({ children }) {
               <GlobalSearchBar role={user?.role} />
 
               <div className="flex items-center justify-end gap-3">
-                <LocaleSwitcher className="min-w-[9.5rem]" />
+                <LocaleSwitcher className="min-w-[9.5rem]" locale={locale} availableLocales={switcherLocales} />
                 <NotificationBell notifications={notifications} />
                 <ProfileMenu settingsHref={user?.role === 'super_admin' ? '/admin/settings' : null} />
               </div>

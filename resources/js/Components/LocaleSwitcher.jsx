@@ -39,9 +39,12 @@ function buildOption(locale, currentLocale) {
   }
 }
 
-export default function LocaleSwitcher({ className = '' }) {
-  const { locale: localeValue = 'id', app = {}, locales: localesValue = FALLBACK_LOCALES } = usePage().props
-  const normalizedLocale = normalizeLocale(app?.locale ?? localeValue)
+export default function LocaleSwitcher({ className = '', locale: localeProp, availableLocales: availableLocalesProp }) {
+  const page = usePage()
+  const { locale: pageLocale = 'id', app = {}, locales: pageLocales = FALLBACK_LOCALES, availableLocales: pageAvailableLocales } = page.props
+  const localeValue = localeProp ?? app?.locale ?? pageLocale
+  const localesValue = availableLocalesProp ?? pageAvailableLocales ?? pageLocales
+  const normalizedLocale = normalizeLocale(localeValue)
   const [open, setOpen] = useState(false)
   const menuRef = useRef(null)
 
