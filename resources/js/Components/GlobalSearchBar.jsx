@@ -63,7 +63,7 @@ export default function GlobalSearchBar({ role = 'member' }) {
   return (
     <div className="relative w-full max-w-xl">
       <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-        <span className="text-slate-400">{t?.form?.search_books_users_borrowings?.split(',')?.[0]}</span>
+        <span className="text-slate-400">{t?.form?.search}</span>
         <input
           value={search}
           onChange={(e) => {

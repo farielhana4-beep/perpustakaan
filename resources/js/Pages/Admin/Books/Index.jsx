@@ -77,7 +77,7 @@ export default function Index(props) {
             onChange={(e) => setData('category_id', e.target.value)}
             className="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
           >
-            <option value="">{t?.form?.all_category}</option>
+            <option value="">{t?.form?.all_categories}</option>
             {safeCategories.map((category) => (
               <option key={category.id} value={category.id}>
                 {category.name}

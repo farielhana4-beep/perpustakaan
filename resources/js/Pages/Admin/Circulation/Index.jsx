@@ -35,6 +35,13 @@ export default function Index(props) {
   const borrowingsData = safeBorrowings?.data ?? []
   const [returningBorrowing, setReturningBorrowing] = useState(null)
   const [returnQuantity, setReturnQuantity] = useState(1)
+  const statusLabels = {
+    pending: t?.status?.pending,
+    borrowed: t?.status?.borrowed,
+    returned: t?.status?.returned,
+    overdue: t?.status?.overdue,
+    lost: t?.status?.lost,
+  }
 
   const form = useForm({
     user_id: '',
@@ -212,7 +219,7 @@ export default function Index(props) {
                 >
                   {safeStatusOptions.map((option) => (
                     <option key={option.value || 'all'} value={option.value}>
-                      {option.label}
+                      {option.value === '' ? t?.form?.all_status : statusLabels[option.value] ?? option.label ?? option.value}
                     </option>
                   ))}
                 </select>

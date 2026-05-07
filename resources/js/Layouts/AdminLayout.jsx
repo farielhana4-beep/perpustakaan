@@ -1,7 +1,10 @@
 import { Link, router, usePage } from '@inertiajs/react'
-import { useEffect } from 'react'
+import BrandMark from '../Components/BrandMark'
+import BrandSync from '../Components/BrandSync'
+import FlashAlert from '../Components/FlashAlert'
 import GlobalSearchBar from '../Components/GlobalSearchBar'
 import NotificationBell from '../Components/NotificationBell'
+import ProfileMenu from '../Components/ProfileMenu'
 
 function NavItem({ href, active, children }) {
   return (
@@ -23,31 +26,11 @@ function NavItem({ href, active, children }) {
 export default function AdminLayout({ children }) {
   const page = usePage()
   const url = page?.props?.url || ''
-  const { auth, notifications = [], locale = 'id', t = {} } = page.props
+  const { auth, notifications = [], t = {} } = page.props
   const user = auth?.user
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('locale', locale)
-    }
-  }, [locale])
 
   const handleLogout = () => {
     router.post('/logout')
-  }
-
-  const handleLanguageChange = (value) => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('locale', value)
-    }
-    router.post(
-      '/change-language',
-      { locale: value },
-      {
-        preserveState: true,
-        preserveScroll: true,
-      },
-    )
   }
 
   const canSeeUsers = user?.role === 'super_admin'
@@ -57,12 +40,12 @@ export default function AdminLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 md:flex">
+      <BrandSync />
       <aside className="border-r border-white/10 bg-slate-900 text-white backdrop-blur md:w-80">
         <div className="flex min-h-screen flex-col p-5">
           <div className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[0_12px_30px_rgba(15,23,42,0.25)]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-slate-400">{t?.common?.library_system}</p>
-            <h1 className="mt-2 text-2xl font-bold">{t?.common?.perpus_admin}</h1>
-            <p className="mt-2 text-sm text-slate-300">{t?.common?.manage_library}</p>
+            <BrandMark dark />
+            <p className="mt-3 text-sm text-slate-300">{t?.common?.manage_library}</p>
           </div>
 
           <nav className="space-y-2">
@@ -114,34 +97,19 @@ export default function AdminLayout({ children }) {
               <GlobalSearchBar role={user?.role} />
 
               <div className="flex items-center justify-end gap-3">
-                <select
-                  value={locale}
-                  onChange={(e) => handleLanguageChange(e.target.value)}
-                  className="rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm text-slate-700 shadow-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                >
-                  <option value="id">ID</option>
-                  <option value="en">EN</option>
-                </select>
-
                 <NotificationBell notifications={notifications} />
-
-                {user && (
-                  <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-2 shadow-sm">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-sm font-bold text-white">
-                      {user.name?.charAt(0)?.toUpperCase()}
-                    </div>
-                    <div className="leading-tight">
-                      <p className="text-sm font-semibold text-slate-900">{user.name}</p>
-                      <p className="text-xs text-slate-500">{t?.roles?.[user.role] ?? user.role}</p>
-                    </div>
-                  </div>
-                )}
+                <ProfileMenu settingsHref={user?.role === 'super_admin' ? '/admin/settings' : null} />
               </div>
             </div>
           </div>
         </header>
 
         <main className="flex-1 bg-gradient-to-br from-slate-50 via-white to-sky-50 px-4 py-6 sm:px-6 lg:px-8">
+          <div className="mx-auto mb-6 max-w-7xl space-y-3">
+            <FlashAlert tone="success" message={page?.props?.flash?.success} />
+            <FlashAlert tone="error" message={page?.props?.flash?.error} />
+            <FlashAlert tone="warning" message={page?.props?.flash?.status} />
+          </div>
           {children}
         </main>
       </div>

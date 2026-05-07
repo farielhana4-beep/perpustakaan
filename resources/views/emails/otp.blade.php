@@ -77,16 +77,19 @@
 <body>
   <div class="card">
     <div class="header">
-      <h1>Sistem Perpustakaan</h1>
+      @if(($branding->library_logo_url ?? null))
+        <img src="{{ $branding->library_logo_url }}" alt="{{ $branding->library_name ?? __('messages.common.library_system') }}" style="height:40px; width:auto; object-fit:contain; margin:0 auto 10px; display:block;">
+      @endif
+      <h1>{{ $branding->library_name ?? __('messages.common.library_system') }}</h1>
     </div>
 
     <div class="content">
-      <p class="text">Gunakan kode berikut untuk verifikasi:</p>
+      <p class="text">{{ __('messages.auth.otp_mail_body') }}</p>
       <div class="otp">{{ $otp }}</div>
-      <p class="note">Kode berlaku selama 5 menit.</p>
+      <p class="note">{{ __('messages.auth.otp_mail_note') }}</p>
     </div>
 
-    <div class="footer">© Sistem Perpustakaan Aman</div>
+    <div class="footer">{{ __('messages.auth.otp_mail_footer') }}</div>
   </div>
 </body>
 </html>

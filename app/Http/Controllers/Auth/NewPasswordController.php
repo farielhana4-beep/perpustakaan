@@ -33,7 +33,7 @@ class NewPasswordController extends Controller
 
         if (! $user || $user->role !== 'member') {
             return back()->withErrors([
-                'email' => 'Password reset is only available for members.',
+                'email' => __('messages.auth.member_only_reset'),
             ]);
         }
 
@@ -44,7 +44,7 @@ class NewPasswordController extends Controller
 
         if (! $record || now()->gt(Carbon::parse($record->expires_at))) {
             return back()->withErrors([
-                'otp' => 'Invalid or expired OTP',
+                'otp' => __('messages.auth.invalid_or_expired_otp'),
             ]);
         }
 
@@ -53,6 +53,6 @@ class NewPasswordController extends Controller
 
         DB::table('password_otps')->where('email', $email)->delete();
 
-        return redirect()->route('login')->with('success', 'Password updated successfully.');
+        return redirect()->route('login')->with('success', __('messages.auth.password_updated'));
     }
 }

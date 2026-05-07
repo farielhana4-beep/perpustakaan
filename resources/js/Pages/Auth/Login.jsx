@@ -16,11 +16,11 @@ export default function Login() {
 
   return (
     <AuthLayout>
-      <Head title={t?.auth?.sign_in} />
+      <Head title={t?.auth?.login_title ?? t?.auth?.login} />
       <div>
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">{t?.common?.library_system}</p>
-        <h1 className="mt-3 text-3xl font-bold text-slate-900">{t?.auth?.sign_in}</h1>
-        <p className="mt-2 text-sm text-slate-600">{t?.auth?.sign_in_hint}</p>
+        <h1 className="mt-3 text-3xl font-bold text-slate-900">{t?.auth?.login}</h1>
+        <p className="mt-2 text-sm text-slate-600">{t?.auth?.login_hint}</p>
       </div>
 
       <form onSubmit={submit} className="mt-8 space-y-5">
@@ -35,7 +35,7 @@ export default function Login() {
           {t?.auth?.remember_me}
         </label>
         <button type="submit" disabled={processing} className="w-full rounded-xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:opacity-60">
-          {processing ? t?.common?.signing_in : t?.auth?.sign_in}
+          {processing ? t?.common?.signing_in : t?.auth?.login}
         </button>
       </form>
 
@@ -48,7 +48,7 @@ export default function Login() {
       <p className="mt-6 text-center text-sm text-slate-600">
         {t?.auth?.new_here}{' '}
         <Link href="/register" className="font-semibold text-sky-700 hover:text-sky-800">
-          {t?.auth?.create_account}
+          {t?.auth?.register}
         </Link>
       </p>
 

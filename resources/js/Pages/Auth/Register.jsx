@@ -17,10 +17,10 @@ export default function Register() {
 
   return (
     <AuthLayout>
-      <Head title={t?.auth?.create_account_title} />
+      <Head title={t?.auth?.register_title ?? t?.auth?.register} />
       <div>
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">{t?.common?.library_system}</p>
-        <h1 className="mt-3 text-3xl font-bold text-slate-900">{t?.auth?.create_account}</h1>
+        <h1 className="mt-3 text-3xl font-bold text-slate-900">{t?.auth?.register}</h1>
         <p className="mt-2 text-sm text-slate-600">{t?.auth?.register_hint}</p>
       </div>
 
@@ -39,14 +39,14 @@ export default function Register() {
         </Field>
 
         <button type="submit" disabled={processing} className="w-full rounded-xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60">
-          {processing ? t?.common?.creating_account : t?.auth?.create_account}
+          {processing ? t?.common?.creating_account : t?.auth?.register}
         </button>
       </form>
 
       <p className="mt-6 text-center text-sm text-slate-600">
         {t?.auth?.already_have_account}{' '}
         <Link href="/login" className="font-semibold text-sky-700 hover:text-sky-800">
-          {t?.auth?.sign_in}
+          {t?.auth?.login}
         </Link>
       </p>
 

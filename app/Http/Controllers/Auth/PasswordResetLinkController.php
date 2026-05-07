@@ -27,7 +27,7 @@ class PasswordResetLinkController extends Controller
 
         if (! $user || $user->role !== 'member') {
             return back()->withErrors([
-                'email' => 'Hanya anggota yang dapat mereset kata sandi.',
+                'email' => __('messages.auth.member_only_reset'),
             ]);
         }
 
@@ -49,6 +49,6 @@ class PasswordResetLinkController extends Controller
 
         return redirect()
             ->route('password.reset', ['email' => $email])
-            ->with('success', 'OTP telah dikirim ke email Anda.');
+            ->with('success', __('messages.auth.otp_sent'));
     }
 }

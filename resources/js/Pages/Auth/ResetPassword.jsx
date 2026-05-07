@@ -2,7 +2,7 @@ import { Head, Link, useForm, usePage } from '@inertiajs/react'
 import AuthLayout from '../../Layouts/AuthLayout'
 
 export default function ResetPassword({ email = '' }) {
-  const { flash = {}, t = {} } = usePage().props
+  const { t = {} } = usePage().props
   const { data, setData, post, processing, errors } = useForm({
     email,
     otp: '',
@@ -17,14 +17,12 @@ export default function ResetPassword({ email = '' }) {
 
   return (
     <AuthLayout>
-      <Head title={t?.auth?.reset_password_title} />
+      <Head title={t?.auth?.otp_verification_title ?? t?.auth?.reset_password_title} />
       <div>
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">{t?.auth?.member_access}</p>
-        <h1 className="mt-3 text-3xl font-bold text-slate-900">{t?.auth?.reset_password_title}</h1>
-        <p className="mt-2 text-sm text-slate-600">{t?.auth?.reset_hint}</p>
+        <h1 className="mt-3 text-3xl font-bold text-slate-900">{t?.auth?.otp_verification_title ?? t?.auth?.reset_password_title}</h1>
+        <p className="mt-2 text-sm text-slate-600">{t?.auth?.otp_verification_hint ?? t?.auth?.reset_hint}</p>
       </div>
-
-      {flash.success && <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{flash.success}</div>}
 
       <form onSubmit={submit} className="mt-8 space-y-5">
         <Field label={t?.form?.email} error={errors.email}>
@@ -44,14 +42,14 @@ export default function ResetPassword({ email = '' }) {
         </Field>
 
         <button type="submit" disabled={processing} className="w-full rounded-xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:opacity-60">
-          {processing ? t?.common?.resetting : t?.auth?.reset_password_title}
+          {processing ? t?.common?.resetting : t?.auth?.reset_password}
         </button>
       </form>
 
       <p className="mt-6 text-center text-sm text-slate-600">
         {t?.auth?.need_to_return}{' '}
         <Link href="/login" className="font-semibold text-sky-700 hover:text-sky-800">
-          {t?.auth?.back_to_sign_in}
+          {t?.auth?.back_to_login}
         </Link>
       </p>
 

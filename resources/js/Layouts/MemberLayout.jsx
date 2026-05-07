@@ -1,7 +1,10 @@
 import { Link, router, usePage } from '@inertiajs/react'
-import { useEffect } from 'react'
+import BrandMark from '../Components/BrandMark'
+import BrandSync from '../Components/BrandSync'
+import FlashAlert from '../Components/FlashAlert'
 import GlobalSearchBar from '../Components/GlobalSearchBar'
 import NotificationBell from '../Components/NotificationBell'
+import ProfileMenu from '../Components/ProfileMenu'
 
 function NavItem({ href, active, children }) {
   return (
@@ -20,42 +23,22 @@ function NavItem({ href, active, children }) {
 export default function MemberLayout({ children }) {
   const page = usePage()
   const url = page?.props?.url || ''
-  const { auth, notifications = [], locale = 'id', t = {} } = page.props
+  const { auth, notifications = [], t = {} } = page.props
   const user = auth?.user
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('locale', locale)
-    }
-  }, [locale])
 
   const logout = (e) => {
     e.preventDefault()
     router.post('/logout')
   }
-
-  const changeLanguage = (value) => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('locale', value)
-    }
-    router.post(
-      '/change-language',
-      { locale: value },
-      {
-        preserveState: true,
-        preserveScroll: true,
-      },
-    )
-  }
   const isActive = (path) => url?.startsWith(path) || false
 
   return (
     <div className="min-h-screen bg-slate-100 md:flex">
+      <BrandSync />
       <aside className="border-r border-slate-800 bg-slate-900 px-5 py-6 text-white md:w-72">
         <div className="mb-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">{t?.common?.member_area}</p>
-          <h1 className="mt-2 text-2xl font-bold">{t?.common?.library_portal}</h1>
-          {user && <p className="mt-2 text-sm text-slate-400">{user.name}</p>}
+          <BrandMark dark />
+          {user && <p className="mt-3 text-sm text-slate-400">{user.name}</p>}
         </div>
 
         <nav className="space-y-2">
@@ -91,34 +74,19 @@ export default function MemberLayout({ children }) {
               <GlobalSearchBar role={user?.role} />
 
               <div className="flex items-center justify-end gap-3">
-                <select
-                  value={locale}
-                  onChange={(e) => changeLanguage(e.target.value)}
-                  className="rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm text-slate-700 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-                >
-                  <option value="id">ID</option>
-                  <option value="en">EN</option>
-                </select>
-
                 <NotificationBell notifications={notifications} />
-
-                {user && (
-                  <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-2 shadow-sm">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-sm font-bold text-white">
-                      {user.name?.charAt(0)?.toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">{user.name}</p>
-                      <p className="text-xs text-slate-500">{user.email}</p>
-                    </div>
-                  </div>
-                )}
+                <ProfileMenu settingsHref="/profile" />
               </div>
             </div>
           </div>
         </header>
 
         <main className="flex-1 bg-gradient-to-br from-slate-50 via-white to-emerald-50 px-4 py-6 sm:px-6 lg:px-8">
+          <div className="mx-auto mb-6 max-w-7xl space-y-3">
+            <FlashAlert tone="success" message={page?.props?.flash?.success} />
+            <FlashAlert tone="error" message={page?.props?.flash?.error} />
+            <FlashAlert tone="warning" message={page?.props?.flash?.status} />
+          </div>
           {children}
         </main>
       </div>

@@ -2,7 +2,7 @@ import { Head, Link, useForm, usePage } from '@inertiajs/react'
 import AuthLayout from '../../Layouts/AuthLayout'
 
 export default function ForgotPassword() {
-  const { flash = {}, t = {} } = usePage().props
+  const { t = {} } = usePage().props
   const { data, setData, post, processing, errors } = useForm({
     email: '',
   })
@@ -21,8 +21,6 @@ export default function ForgotPassword() {
         <p className="mt-2 text-sm text-slate-600">{t?.auth?.forgot_hint}</p>
       </div>
 
-      {flash.success && <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{flash.success}</div>}
-
       <form onSubmit={submit} className="mt-8 space-y-5">
         <Field label={t?.form?.email} error={errors.email}>
           <input className="input" type="email" value={data.email} onChange={(e) => setData('email', e.target.value)} />
@@ -36,7 +34,7 @@ export default function ForgotPassword() {
       <p className="mt-6 text-center text-sm text-slate-600">
         {t?.auth?.need_to_return}{' '}
         <Link href="/login" className="font-semibold text-sky-700 hover:text-sky-800">
-          {t?.auth?.back_to_sign_in}
+          {t?.auth?.back_to_login}
         </Link>
       </p>
 

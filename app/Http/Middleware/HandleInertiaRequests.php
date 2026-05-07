@@ -39,13 +39,27 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $settings = Setting::current();
+
         return [
             ...parent::share($request),
             'locale' => App::getLocale(),
-            't' => trans('messages'),
+            'locales' => config('app.supported_locales', ['id', 'en']),
+            't' => fn () => trans('messages'),
             'auth' => [
                 'user' => fn () => $request->user()
-                    ? $request->user()->only('id', 'name', 'email', 'role')
+                    ? [
+                        'id' => $request->user()->id,
+                        'name' => $request->user()->name,
+                        'username' => $request->user()->username,
+                        'email' => $request->user()->email,
+                        'role' => $request->user()->role,
+                        'bio' => $request->user()->bio,
+                        'avatar_path' => $request->user()->avatar_path,
+                        'avatar_url' => $request->user()->avatar_url,
+                        'updated_at' => $request->user()->updated_at?->toISOString(),
+                        'email_verified_at' => $request->user()->email_verified_at?->toISOString(),
+                    ]
                     : null,
             ],
             'flash' => [
@@ -53,12 +67,7 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
                 'status' => fn () => $request->session()->get('status'),
             ],
-            'settings' => fn () => Setting::current()->only(
-                'fine_per_day',
-                'max_borrow_days',
-                'currency',
-                'max_books_per_user',
-            ),
+            'settings' => fn () => $settings->toArray(),
             'notifications' => fn () => $this->notifications($request),
         ];
     }

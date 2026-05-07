@@ -15,8 +15,8 @@ use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\Member\CatalogController;
 use App\Http\Controllers\Member\DashboardController as MemberDashboardController;
 use App\Http\Controllers\Member\HistoryController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -30,15 +30,28 @@ Route::get('/', function () {
         : redirect()->route('login');
 });
 
-Route::post('/change-language', function (Request $request) {
+Route::post('/locale', function (Request $request) {
     $locale = $request->locale;
+    $supportedLocales = config('app.supported_locales', ['id', 'en']);
 
-    if (! in_array($locale, ['id', 'en'], true)) {
+    if (! in_array($locale, $supportedLocales, true)) {
         abort(400);
     }
 
     session(['locale' => $locale]);
-    App::setLocale($locale);
+
+    return back();
+})->name('locale');
+
+Route::post('/change-language', function (Request $request) {
+    $locale = $request->locale;
+    $supportedLocales = config('app.supported_locales', ['id', 'en']);
+
+    if (! in_array($locale, $supportedLocales, true)) {
+        abort(400);
+    }
+
+    session(['locale' => $locale]);
 
     return back();
 })->name('change.language');
@@ -75,6 +88,14 @@ Route::middleware('guest')->group(function () {
 Route::get('/search/global', GlobalSearchController::class)
     ->middleware('auth')
     ->name('search.global');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [ProfileController::class, 'password'])->name('profile.password');
+    Route::post('/profile/avatar', [ProfileController::class, 'avatar'])->name('profile.avatar');
+    Route::delete('/profile/avatar', [ProfileController::class, 'removeAvatar'])->name('profile.avatar.remove');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -119,8 +140,10 @@ Route::middleware('auth')->group(function () {
             // Users (ONLY super_admin)
             Route::middleware('role:super_admin')->group(function () {
                 Route::resource('users', UserController::class)->except(['show']);
-                Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');
-                Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+                Route::middleware('can:manage-branding')->group(function () {
+                    Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');
+                    Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+                });
             });
 
             // Borrowings / Circulation

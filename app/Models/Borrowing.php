@@ -11,6 +11,7 @@ use Illuminate\Support\Carbon;
 
 class Borrowing extends Model
 {
+    public const STATUS_PENDING = 'pending';
     public const STATUS_BORROWED = 'borrowed';
     public const STATUS_RETURNED = 'returned';
     public const STATUS_OVERDUE = 'overdue';

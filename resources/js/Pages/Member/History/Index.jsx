@@ -18,6 +18,13 @@ export default function Index({ borrowings, settings, filters, statusOptions }) 
   const currency = settings?.currency ?? 'IDR'
   const [returningBorrowing, setReturningBorrowing] = useState(null)
   const [returnQuantity, setReturnQuantity] = useState(1)
+  const statusLabels = {
+    pending: t?.status?.pending,
+    borrowed: t?.status?.borrowed,
+    returned: t?.status?.returned,
+    overdue: t?.status?.overdue,
+    lost: t?.status?.lost,
+  }
   const { data, setData, applyFilters, resetFilters, isLoading } = useIndexFilters({
     url: '/member/history',
     defaults: defaultFilters,
@@ -76,7 +83,7 @@ export default function Index({ borrowings, settings, filters, statusOptions }) 
               <select className="rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none" value={data.status} onChange={(e) => setData('status', e.target.value)}>
                 {statusOptions.map((option) => (
                   <option key={option.value || 'all'} value={option.value}>
-                    {option.label}
+                    {option.value === '' ? t?.form?.all_status : statusLabels[option.value] ?? option.label ?? option.value}
                   </option>
                 ))}
               </select>

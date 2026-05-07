@@ -76,7 +76,7 @@ export default function Index({ books, categories, filters }) {
                 onChange={(e) => setData('search', e.target.value)}
               />
               <select className="input w-56" value={data.category} onChange={(e) => setData('category', e.target.value)}>
-                <option value="">{t?.catalog?.all_categories}</option>
+                <option value="">{t?.form?.all_categories}</option>
                 {categories.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
